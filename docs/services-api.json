@@ -1,0 +1,392 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Services API Documentation",
+    "version": "1.0.0",
+    "description": "API documentation for the Services module and Admin authentication"
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Admin Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "admin@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "yourpassword"
+                  }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services": {
+      "get": {
+        "tags": ["Services"],
+        "summary": "Get all services (paginated)",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page"
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "schema": {
+              "type": "string",
+              "enum": ["en", "ar"],
+              "default": "en"
+            },
+            "description": "Language code"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of services",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Service"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Services"],
+        "summary": "Create a new service (Admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Service created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}": {
+      "get": {
+        "tags": ["Services"],
+        "summary": "Get service by ID",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Service details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Services"],
+        "summary": "Update service (Admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServiceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Service updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Service"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Service": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "descriptionEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "displayOrder": {
+            "type": "integer"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
+          },
+          "pricingPlans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PricingPlan"
+            }
+          }
+        }
+      },
+      "CreateServiceDto": {
+        "type": "object",
+        "required": ["nameEn", "nameAr"],
+        "properties": {
+          "nameEn": {
+            "type": "string"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "descriptionEn": {
+            "type": "string"
+          },
+          "descriptionAr": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateProjectDto"
+            }
+          },
+          "pricingPlans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreatePricingPlanDto"
+            }
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "PricingPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Feature"
+            }
+          }
+        }
+      },
+      "Feature": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

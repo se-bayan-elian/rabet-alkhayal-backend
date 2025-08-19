@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>رسالة جديدة من نموذج الاتصال</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background-color: #f9fafb;
+      color: #4a5568;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      overflow: hidden;
+      text-align: right;
+    }
+    .header {
+      background: #0CD495;
+      color: white;
+      padding: 25px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 30px;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    .section-title {
+      color: #0CD495;
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .detail-row {
+      padding: 8px 0;
+      color: #4a5568;
+    }
+    .detail-row strong {
+      color: #2d3748;
+    }
+    .message-box {
+      background: #f3f4f6;
+      padding: 20px;
+      border-radius: 8px;
+      color: #4a5568;
+      white-space: pre-wrap;
+      border-right: 4px solid #0CD495;
+    }
+    .footer {
+      background: #f3f4f6;
+      color: #718096;
+      padding: 20px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .highlight {
+      color: #0CD495;
+      font-weight: 600;
+    }
+    .timestamp {
+      text-align: left;
+      font-size: 14px;
+      color: #718096;
+      margin-top: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table td {
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+    }
+    table td strong {
+      color: #2d3748;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      رسالة جديدة من نموذج الاتصال
+    </div>
+    <div class="content">
+      <div class="section">
+        <div class="section-title">بيانات المرسل</div>
+        <table>
+          <tr>
+            <td><span class="highlight">{{name}}</span></td>
+            <td><strong>الاسم</strong></td>
+          </tr>
+          <tr>
+            <td>{{email}}</td>
+            <td><strong>البريد الإلكتروني</strong></td>
+          </tr>
+          {{#if phone}}
+          <tr>
+            <td>{{phone}}</td>
+            <td><strong>رقم الهاتف</strong></td>
+          </tr>
+          {{/if}}
+        </table>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">الرسالة</div>
+        <div class="message-box">{{message}}</div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      تم إنشاء هذا البريد الإلكتروني تلقائيًا من نموذج الاتصال في {{date}}
+    </div>
+  </div>
+</body>
+</html>

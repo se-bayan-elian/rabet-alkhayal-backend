@@ -1,0 +1,10 @@
+{
+  "services": {
+    "name": "Name",
+    "description": "Description",
+    "notFound": "Service not found",
+    "created": "Service created successfully",
+    "updated": "Service updated successfully",
+    "deleted": "Service deleted successfully"
+  }
+}
