@@ -1,0 +1,303 @@
+# Services API Documentation
+
+## List Services
+`GET /api/services`
+
+```json
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": {
+        "en": "Web Development",
+        "ar": "تطوير المواقع"
+      },
+      "description": {
+        "en": "Complete web development solutions including frontend and backend",
+        "ar": "خدمات تطوير المواقع المتكاملة شاملة الواجهة الأمامية والخلفية"
+      },
+      "icon": "https://example.com/icons/web-dev.png",
+      "iconPublicId": "services/icons/abc123",
+      "image": "https://example.com/images/web-development.jpg",
+      "imagePublicId": "services/images/def456",
+      "projects": [],
+      "features": [],
+      "pricingPlans": [],
+      "createdAt": "2025-08-24T09:25:31.833Z",
+      "updatedAt": "2025-08-24T09:25:31.833Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "totalItems": 1,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  }
+}
+```
+
+## Get Single Service
+`GET /api/services/:id`
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": {
+    "en": "Web Development",
+    "ar": "تطوير المواقع"
+  },
+  "description": {
+    "en": "Complete web development solutions including frontend and backend",
+    "ar": "خدمات تطوير المواقع المتكاملة شاملة الواجهة الأمامية والخلفية"
+  },
+  "icon": "https://example.com/icons/web-dev.png",
+  "iconPublicId": "services/icons/abc123",
+  "image": "https://example.com/images/web-development.jpg",
+  "imagePublicId": "services/images/def456",
+  "projects": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440001",
+      "serviceId": "550e8400-e29b-41d4-a716-446655440000",
+      "title": {
+        "en": "E-commerce Platform",
+        "ar": "منصة التجارة الإلكترونية"
+      },
+      "description": {
+        "en": "Modern e-commerce solution with advanced features",
+        "ar": "حل حديث للتجارة الإلكترونية مع ميزات متقدمة"
+      },
+      "mainImageUrl": "https://example.com/projects/ecommerce.jpg",
+      "imagePublicId": "projects/images/abc123",
+      "gallery": [
+        "https://example.com/gallery/ecommerce1.jpg",
+        "https://example.com/gallery/ecommerce2.jpg"
+      ],
+      "galleryPublicIds": [
+        "projects/gallery/gal123",
+        "projects/gallery/gal456"
+      ]
+    }
+  ],
+  "pricingPlans": [
+    {
+      "id": "880e8400-e29b-41d4-a716-446655440003",
+      "serviceId": "550e8400-e29b-41d4-a716-446655440000",
+      "name": {
+        "en": "Basic Plan",
+        "ar": "الباقة الأساسية"
+      },
+      "description": {
+        "en": "Perfect for small businesses",
+        "ar": "مثالي للشركات الصغيرة"
+      },
+      "originalPrice": 999.99,
+      "discountedPrice": 799.99,
+      "features": [
+        {
+          "id": "990e8400-e29b-41d4-a716-446655440004",
+          "pricingPlanId": "880e8400-e29b-41d4-a716-446655440003",
+          "name": {
+            "en": "Responsive Design",
+            "ar": "تصميم متجاوب"
+          },
+          "description": {
+            "en": "Works on all devices",
+            "ar": "يعمل على جميع الأجهزة"
+          },
+          "isIncluded": true
+        }
+      ]
+    }
+  ],
+  "createdAt": "2025-08-24T09:25:31.833Z",
+  "updatedAt": "2025-08-24T09:25:31.833Z"
+}
+```
+
+## Create Service
+`POST /api/services`
+
+Request Body:
+```json
+{
+  "name": {
+    "en": "Web Development",
+    "ar": "تطوير المواقع"
+  },
+  "description": {
+    "en": "Professional web development services for modern businesses",
+    "ar": "خدمات تطوير مواقع احترافية للشركات الحديثة"
+  },
+  "icon": "https://example.com/icon.png",
+  "image": "https://example.com/image.jpg",
+  "projects": [
+    {
+      "title": {
+        "en": "E-commerce Platform",
+        "ar": "منصة التجارة الإلكترونية"
+      },
+      "description": {
+        "en": "Full-featured online store",
+        "ar": "متجر إلكتروني متكامل"
+      },
+      "mainImageUrl": "https://example.com/project1.jpg",
+      "gallery": [
+        "https://example.com/gallery1.jpg",
+        "https://example.com/gallery2.jpg"
+      ]
+    }
+  ],
+  "pricingPlans": [
+    {
+      "name": {
+        "en": "Basic Plan",
+        "ar": "الباقة الأساسية"
+      },
+      "description": {
+        "en": "Perfect for small businesses",
+        "ar": "مثالي للشركات الصغيرة"
+      },
+      "originalPrice": 999.99,
+      "discountedPrice": 799.99,
+      "features": [
+        {
+          "name": {
+            "en": "Responsive Design",
+            "ar": "تصميم متجاوب"
+          },
+          "description": {
+            "en": "Works on all devices",
+            "ar": "يعمل على جميع الأجهزة"
+          },
+          "isIncluded": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Update Service
+`PUT /api/services/:id`
+
+Request Body:
+```json
+{
+  "name": {
+    "en": "Updated Web Development",
+    "ar": "تطوير المواقع المحدث"
+  },
+  "description": {
+    "en": "Updated web development solutions",
+    "ar": "حلول تطوير المواقع المحدثة"
+  }
+}
+```
+
+## Upload Service Icon
+`POST /api/services/:id/icon`
+Content-Type: multipart/form-data
+
+Request Body:
+```
+file: [binary data]
+```
+
+Response:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "icon": "https://example.com/uploaded-icon.png",
+  "iconPublicId": "services/icons/new123"
+}
+```
+
+## Upload Service Image
+`POST /api/services/:id/image`
+Content-Type: multipart/form-data
+
+Request Body:
+```
+file: [binary data]
+```
+
+Response:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "image": "https://example.com/uploaded-image.jpg",
+  "imagePublicId": "services/images/new456"
+}
+```
+
+## Create Project
+`POST /api/services/projects`
+
+Request Body:
+```json
+{
+  "serviceId": "550e8400-e29b-41d4-a716-446655440000",
+  "title": {
+    "en": "E-commerce Platform",
+    "ar": "منصة التجارة الإلكترونية"
+  },
+  "description": {
+    "en": "Full-featured online store",
+    "ar": "متجر إلكتروني متكامل"
+  },
+  "mainImageUrl": "https://example.com/project.jpg"
+}
+```
+
+## Upload Project Image
+`POST /api/services/projects/:id/image`
+Content-Type: multipart/form-data
+
+Request Body:
+```
+file: [binary data]
+```
+
+Response:
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "mainImageUrl": "https://example.com/uploaded-project.jpg",
+  "imagePublicId": "projects/images/new789"
+}
+```
+
+## Upload Project Gallery Image
+`POST /api/services/projects/:id/gallery`
+Content-Type: multipart/form-data
+
+Request Body:
+```
+file: [binary data]
+```
+
+Response:
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440001",
+  "gallery": [
+    "https://example.com/gallery1.jpg",
+    "https://example.com/gallery2.jpg"
+  ],
+  "galleryPublicIds": [
+    "projects/gallery/gal123",
+    "projects/gallery/gal456"
+  ]
+}
+```
+
+## Notes
+
+1. All endpoints that modify data (POST, PUT, DELETE) require authentication.
+2. File uploads should be sent as `multipart/form-data`.
+3. All image files are stored in Cloudinary and their public IDs are saved in the database.
+4. All text fields (name, description, title) use JSON format for translations with `en` and `ar` keys.
+5. Dates are returned in ISO 8601 format.
+6. Prices are in decimal format with 2 decimal places.

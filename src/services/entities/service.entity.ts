@@ -20,51 +20,37 @@ export class Service {
   id: string;
 
   @ApiProperty({
-    description: 'Service name in English',
+    description: 'Service name',
     example: 'Web Development',
   })
-  @Column({ type: 'varchar', length: 100 })
-  nameEn: string;
-
-  @ApiProperty({
-    description: 'Service name in Arabic',
-    example: 'تطوير المواقع',
-  })
-  @Column({ type: 'varchar', length: 100 })
-  nameAr: string;
-
-  @ApiProperty({
-    description: 'Service description in English',
-    example: 'Full-stack web development services',
-  })
-  @Column({ type: 'text', nullable: true })
-  descriptionEn?: string;
-
-  @ApiProperty({
-    description: 'Service description in Arabic',
-    example: 'خدمات تطوير المواقع المتكاملة',
-  })
-  @Column({ type: 'text', nullable: true })
-  descriptionAr?: string;
-
-  @ApiProperty({
-    description: 'Localized service name',
-    example: 'Web Development',
-  })
+  @Column({ type: 'varchar', length: 255 })
   name: string;
 
   @ApiProperty({
-    description: 'Localized service description',
+    description: 'Service description',
     example: 'Full-stack web development services',
   })
+  @Column({ type: 'text', nullable: true })
   description?: string;
 
   @ApiProperty({
-    description: 'Service icon/image URL',
+    description: 'Service icon URL',
     example: 'https://example.com/icons/web-dev.png',
   })
   @Column({ type: 'varchar', length: 500, nullable: true })
   icon?: string;
+
+  @ApiProperty({
+    description: 'Service icon Cloudinary public ID',
+    example: 'services/icons/web-dev',
+  })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    name: 'icon_public_id',
+  })
+  iconPublicId?: string;
 
   @ApiProperty({
     description: 'Service image URL',
@@ -73,6 +59,18 @@ export class Service {
   })
   @Column({ type: 'varchar', length: 500, nullable: true })
   image?: string;
+
+  @ApiProperty({
+    description: 'Service image Cloudinary public ID',
+    example: 'services/images/service',
+  })
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+    name: 'image_public_id',
+  })
+  imagePublicId?: string;
 
   @ApiProperty({
     description: 'Whether the service is active',

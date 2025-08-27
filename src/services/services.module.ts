@@ -6,22 +6,23 @@ import { Service } from './entities/service.entity';
 import { Project } from './entities/project.entity';
 import { PricingPlan } from './entities/pricing-plan.entity';
 import { Feature } from './entities/feature.entity';
-import { I18nModule } from 'nestjs-i18n';
-import * as path from 'path';
+import { CloudinaryModule } from '../common/modules/cloudinary.module';
+import { PricingPlansService } from './pricing-plan.service';
+import { ProjectsService } from './projects.service';
+import { FeaturesService } from './features.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Service, Project, PricingPlan, Feature]),
-    I18nModule.forRoot({
-      fallbackLanguage: 'en',
-      loaderOptions: {
-        path: path.join(__dirname, '../i18n/'),
-        watch: true,
-      },
-    }),
+    CloudinaryModule,
   ],
   controllers: [ServicesController],
-  providers: [ServicesService],
+  providers: [
+    ServicesService,
+    PricingPlansService,
+    ProjectsService,
+    FeaturesService,
+  ],
   exports: [ServicesService],
 })
 export class ServicesModule {}

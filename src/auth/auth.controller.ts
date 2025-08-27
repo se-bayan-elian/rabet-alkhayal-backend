@@ -8,9 +8,10 @@ import {
   UseGuards,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { CustomerLoginDto } from './dto/customer-login.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
@@ -21,13 +22,40 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/users/entities/user.entity';
 import { SignInVerificationDto } from './dtos/sign-in.dto';
 import { SignUpDto } from './dtos/sign-up.dto';
-@Controller('auth')
+@Controller({
+  path: 'auth',
+  version: '1',
+})
+@ApiTags('Auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly logger: PinoLogger,
     private readonly googleOAuthService: GoogleOAuthService,
   ) {}
+  @Post('admin/create')
+  @ApiOperation({
+    summary: 'Create new admin (Temporary endpoint)',
+    description:
+      'Creates a new administrator account with the specified details',
+  })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Admin created successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+        email: { type: 'string' },
+        role: { type: 'string' },
+      },
+    },
+  })
+  async createAdmin(@Body() createAdminDto: CreateAdminDto) {
+    return this.authService.createAdmin(createAdminDto);
+  }
+
   @Post('admin/login')
   @ApiOperation({
     summary: 'Admin login endpoint',
@@ -45,8 +73,11 @@ export class AuthController {
       },
     },
   })
-  async adminLogin(@Body() body: AdminLoginDto) {
-    return this.authService.adminLogin(body);
+  async adminLogin(
+    @Body() body: AdminLoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    return this.authService.adminLogin(body, response);
   }
 
   @Post('login')

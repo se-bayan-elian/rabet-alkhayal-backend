@@ -1,0 +1,15 @@
+{
+  "welcome": "Welcome to our service",
+  "validation": {
+    "required": "{field} is required",
+    "email": "Please enter a valid email address",
+    "minLength": "{field} must be at least {min} characters",
+    "maxLength": "{field} must not exceed {max} characters"
+  },
+  "service": {
+    "notFound": "Service not found",
+    "created": "Service created successfully",
+    "updated": "Service updated successfully",
+    "deleted": "Service deleted successfully"
+  }
+}

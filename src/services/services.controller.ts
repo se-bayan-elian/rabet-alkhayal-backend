@@ -3,430 +3,655 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
   HttpStatus,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  Patch,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
   ApiQuery,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { CreatePricingPlanDto } from './dto/create-pricing-plan.dto';
-import { UpdatePricingPlanDto } from './dto/update-pricing-plan.dto';
-import { UpsertPricingPlanDto } from './dto/upsert-pricing-plan.dto';
-import { CreateFeatureDto } from './dto/create-feature.dto';
-import { UpdateFeatureDto } from './dto/update-feature.dto';
-import { ContactFormDto } from './dto/contact-form.dto';
 import { Service } from './entities/service.entity';
 import { Project } from './entities/project.entity';
-import { PricingPlan } from './entities/pricing-plan.entity';
-import { Feature } from './entities/feature.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { FileUploadInterceptor } from '../common/interceptors/file-upload.interceptor';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/helpers/enums';
+import { I18nTransformInterceptor } from '../common/interceptors/i18n-transform.interceptor';
+import { UpdatePricingPlanDto } from './dto/update-pricing-plan.dto';
+import { CreatePricingPlanDto } from './dto/create-pricing-plan.dto';
+import { FindServicesDto } from './dto/find-services.dto';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 
 @ApiTags('services')
 @Controller('services')
+@UseInterceptors(I18nTransformInterceptor)
+@ApiResponse({
+  status: HttpStatus.UNAUTHORIZED,
+  description: 'User is not authorized',
+})
+@ApiResponse({
+  status: HttpStatus.FORBIDDEN,
+  description: 'User does not have required role',
+})
 export class ServicesController {
+  @Delete(':serviceId/projects/:projectId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiOperation({ summary: 'Delete a project for a service' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Project deleted successfully',
+  })
+  async deleteProject(
+    @Param('serviceId') serviceId: string,
+    @Param('projectId') projectId: string,
+  ) {
+    // Optionally, you can check if the project belongs to the service
+    return this.servicesService.deleteProject(projectId);
+  }
+  @Post('projects')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiOperation({ summary: 'Create a new project (no serviceId in path)' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Project created successfully',
+  })
+  async createProjectNoServiceId(@Body() createProjectDto: CreateProjectDto) {
+    // serviceId must be present in the DTO
+    if (!createProjectDto.serviceId) {
+      throw new NotFoundException('serviceId is required in the body');
+    }
+    return this.servicesService.createProject(
+      createProjectDto.serviceId,
+      createProjectDto,
+    );
+  }
   constructor(private readonly servicesService: ServicesService) {}
 
-  // PUBLIC ENDPOINTS (for frontend display)
-
-  @Get()
-  @ApiOperation({
-    summary: 'Get all active services (paginated)',
-  })
-  @ApiQuery({
-    name: 'lang',
-    required: false,
-    type: String,
-    description: 'Language code (en/ar)',
-    example: 'en',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Services retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/Service' },
-          description: 'List of services',
-        },
-        meta: {
-          type: 'object',
-          properties: {
-            page: { type: 'number', example: 1 },
-            limit: { type: 'number', example: 10 },
-            totalItems: { type: 'number', example: 100 },
-            totalPages: { type: 'number', example: 10 },
-            hasNextPage: { type: 'boolean', example: true },
-            hasPreviousPage: { type: 'boolean', example: false },
-          },
-        },
-      },
-    },
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number (default: 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page (default: 10)',
-  })
-  findAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Query('lang') lang = 'en',
-  ) {
-    return this.servicesService.findAllServices({ page, limit, lang });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get service by ID with full details' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Service retrieved successfully',
-    type: Service,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Service not found',
-  })
-  findOne(@Param('id') id: string) {
-    return this.servicesService.findServiceById(id);
-  }
-
-  @Get(':id/projects')
-  @ApiOperation({ summary: 'Get projects for a specific service' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Projects retrieved successfully',
-    type: [Project],
-  })
-  findProjectsByService(@Param('id') serviceId: string) {
-    return this.servicesService.findProjectsByService(serviceId);
-  }
-
-  @Get(':id/pricing-plans')
-  @ApiOperation({ summary: 'Get pricing plans for a specific service' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Pricing plans retrieved successfully',
-    type: [PricingPlan],
-  })
-  findPricingPlansByService(@Param('id') serviceId: string) {
-    return this.servicesService.findPricingPlansByService(serviceId);
-  }
-
-  @Post('contact')
-  @ApiOperation({ summary: 'Submit contact form for service inquiry' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Contact form submitted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: {
-          type: 'string',
-          example: 'Thank you for your inquiry! We will get back to you soon.',
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Service not found',
-  })
-  handleContactForm(@Body() contactFormDto: ContactFormDto) {
-    return this.servicesService.handleContactForm(contactFormDto);
-  }
-
-  // ADMIN ENDPOINTS (protected)
-
   @Post()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.Admin)
-  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
   @ApiOperation({
-    summary:
-      'Create a new service with optional projects and pricing plans (Admin only)',
+    summary: 'Create a new service',
+    description:
+      'Creates a new service with translations for name and description in both English and Arabic',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Service created successfully',
     type: Service,
+    schema: {
+      example: {
+        id: 'uuid-here',
+        name: {
+          en: 'Web Development',
+          ar: 'تطوير المواقع',
+        },
+        description: {
+          en: 'Complete web development solutions including frontend and backend',
+          ar: 'خدمات تطوير المواقع المتكاملة شاملة الواجهة الأمامية والخلفية',
+        },
+        icon: 'https://example.com/icons/web-dev.png',
+        image: 'https://example.com/images/web-development.jpg',
+        projects: [],
+        features: [],
+        pricingPlans: [],
+        createdAt: '2025-08-24T09:25:31.833Z',
+        updatedAt: '2025-08-24T09:25:31.833Z',
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid input data',
+    description: 'Invalid input (missing required fields or invalid format)',
   })
-  create(@Body() createServiceDto: CreateServiceDto) {
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'User is not authorized',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'User does not have required role',
+  })
+  create(@Body() createServiceDto: CreateServiceDto): Promise<Service> {
     return this.servicesService.createService(createServiceDto);
   }
 
-  @Get('admin/all')
+  @Post(':serviceId/pricing-plans')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all services including inactive (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Services retrieved successfully',
-    type: [Service],
+  @Roles(Role.SuperAdmin)
+  @ApiOperation({
+    summary: 'Create a new pricing plan for a service',
+    description:
+      'Creates a new pricing plan with features for the specified service',
   })
-  findAllAdmin() {
-    return this.servicesService.findAllServicesAdmin();
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Pricing plan created successfully',
+  })
+  createPricingPlan(
+    @Param('serviceId') serviceId: string,
+    @Body() createPricingPlanDto: CreatePricingPlanDto,
+  ) {
+    return this.servicesService.createPricingPlan({
+      ...createPricingPlanDto,
+      serviceId,
+    });
   }
 
-  @Patch(':id')
+  @Delete(':serviceId/pricing-plans/:planId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiOperation({
+    summary: 'Delete a pricing plan',
+    description: 'Deletes a pricing plan and all its associated features',
+  })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'Pricing plan deleted successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Pricing plan not found',
+  })
+  async deletePricingPlan(
+    @Param('serviceId') serviceId: string,
+    @Param('planId') planId: string,
+  ) {
+    // First verify that the plan belongs to the service
+    const plan = await this.servicesService.findPricingPlanById(planId);
+    if (plan.serviceId !== serviceId) {
+      throw new NotFoundException('Pricing plan not found for this service');
+    }
+    await this.servicesService.deletePricingPlan(planId);
+    return { statusCode: HttpStatus.NO_CONTENT };
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get all services',
+    description:
+      'Get a paginated list of services. Can search by name or description.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns paginated list of services',
+    schema: {
+      example: {
+        data: [
+          {
+            id: 'uuid-here',
+            name: 'Web Development',
+            description: 'Complete web development solutions',
+            icon: 'https://example.com/icons/web-dev.png',
+            image: 'https://example.com/images/web-development.jpg',
+            projects: [],
+            features: [],
+            pricingPlans: [],
+            createdAt: '2025-08-24T09:25:31.833Z',
+            updatedAt: '2025-08-24T09:25:31.833Z',
+          },
+        ],
+        meta: {
+          page: 1,
+          limit: 10,
+          totalItems: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
+    },
+  })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+    description: 'Search query - will search in name and description',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number for pagination (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page (default: 10)',
+  })
+  findAll(@Query() query: FindServicesDto) {
+    return this.servicesService.findAllServices(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get a service by id',
+    description:
+      'Retrieves detailed information about a specific service including translations',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns a service by id with translations',
+    schema: {
+      example: {
+        id: 'uuid-here',
+        name: {
+          en: 'Web Development',
+          ar: 'تطوير المواقع',
+        },
+        description: {
+          en: 'Complete web development solutions including frontend and backend',
+          ar: 'خدمات تطوير المواقع المتكاملة شاملة الواجهة الأمامية والخلفية',
+        },
+        icon: 'https://example.com/icons/web-dev.png',
+        image: 'https://example.com/images/web-development.jpg',
+        projects: [
+          {
+            id: 'project-uuid',
+            title: {
+              en: 'E-commerce Platform',
+              ar: 'منصة التجارة الإلكترونية',
+            },
+            description: {
+              en: 'Modern e-commerce solution',
+              ar: 'حل حديث للتجارة الإلكترونية',
+            },
+          },
+        ],
+        features: [
+          {
+            id: 'feature-uuid',
+            name: {
+              en: 'Responsive Design',
+              ar: 'تصميم متجاوب',
+            },
+            description: {
+              en: 'Works on all devices',
+              ar: 'يعمل على جميع الأجهزة',
+            },
+          },
+        ],
+        pricingPlans: [
+          {
+            id: 'plan-uuid',
+            name: {
+              en: 'Basic Plan',
+              ar: 'الخطة الأساسية',
+            },
+            description: {
+              en: 'Perfect for small businesses',
+              ar: 'مثالي للشركات الصغيرة',
+            },
+            price: 99.99,
+          },
+        ],
+        createdAt: '2025-08-24T09:25:31.833Z',
+        updatedAt: '2025-08-24T09:25:31.833Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Service not found',
+  })
+  findOne(@Param('id') id: string): Promise<Service> {
+    return this.servicesService.findServiceById(id);
+  }
+
+  @Get(':id/pricing-plans')
+  @ApiOperation({
+    summary: 'Get pricing plans for a service',
+    description:
+      'Retrieves all pricing plans associated with a specific service',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns pricing plans for the specified service',
+    schema: {
+      example: [
+        {
+          id: '431c146b-64b4-4559-a101-bf7a6067c09f',
+          name: 'Basic Plan',
+          description: 'Perfect for small businesses',
+          originalPrice: 1100,
+          finalPrice: 900,
+          billingPeriod: 'one-time',
+          deliveryDays: 7,
+          revisions: 3,
+          quantity: 1,
+          isActive: true,
+          isPopular: true,
+          displayOrder: 2,
+          createdAt: '2025-08-26T08:00:00.000Z',
+          updatedAt: '2025-08-26T09:15:00.000Z',
+          service: {
+            id: '86b805dc-3b8a-421c-80ad-ff0e6a162390',
+            name: 'Web Development',
+          },
+          features: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440004',
+              name: 'Feature 1',
+              description: 'Feature 1 description',
+              isIncluded: true,
+            },
+            {
+              id: '660e8400-e29b-41d4-a716-446655440005',
+              name: 'Feature 2',
+              description: 'Feature 2 description',
+              isIncluded: true,
+            },
+          ],
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Service not found',
+  })
+  async getPricingPlans(@Param('id') id: string) {
+    return this.servicesService.findPricingPlansByService(id);
+  }
+
+  @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update service (Admin only)' })
+  @ApiOperation({
+    summary: 'Update a service',
+    description:
+      'Update service information including translations. All fields are optional.',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Service updated successfully',
+    schema: {
+      example: {
+        id: 'uuid-here',
+        name: {
+          en: 'Updated Web Development',
+          ar: 'تطوير المواقع المحدث',
+        },
+        description: {
+          en: 'Updated web development solutions including frontend and backend',
+          ar: 'خدمات تطوير المواقع المتكاملة المحدثة شاملة الواجهة الأمامية والخلفية',
+        },
+        icon: 'https://example.com/icons/web-dev-updated.png',
+        image: 'https://example.com/images/web-development-updated.jpg',
+        projects: [],
+        features: [],
+        pricingPlans: [],
+        createdAt: '2025-08-24T09:25:31.833Z',
+        updatedAt: '2025-08-24T09:25:31.833Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Service not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input format for translations or other fields',
+  })
+  update(
+    @Param('id') id: string,
+    @Body() updateServiceDto: UpdateServiceDto,
+  ): Promise<Service> {
+    return this.servicesService.updateService(id, updateServiceDto);
+  }
+
+  @Post('projects/:id/image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @UseInterceptors(FileUploadInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload project main image' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Project image uploaded successfully',
+  })
+  async uploadProjectImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+  ): Promise<Project> {
+    return this.servicesService.uploadProjectImage(id, file);
+  }
+
+  @Post('projects/:id/gallery')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @UseInterceptors(FileUploadInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload project gallery image' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Project gallery image uploaded successfully',
+  })
+  async uploadProjectGalleryImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+  ): Promise<Project> {
+    return this.servicesService.uploadProjectGalleryImage(id, file);
+  }
+
+  @Delete('projects/:id/gallery/:imageIndex')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiOperation({ summary: 'Remove project gallery image' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Project gallery image removed successfully',
+  })
+  async removeProjectGalleryImage(
+    @Param('id') id: string,
+    @Param('imageIndex') imageIndex: number,
+  ): Promise<Project> {
+    return this.servicesService.removeProjectGalleryImage(id, imageIndex);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiOperation({
+    summary: 'Delete a service',
+    description:
+      'Permanently removes a service and all associated data (projects, features, pricing plans)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Service deleted successfully',
+    schema: {
+      example: {
+        message: 'Service deleted successfully',
+        id: 'uuid-here',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Service not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'User does not have sufficient permissions',
+  })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.servicesService.deleteService(id);
+  }
+
+  @Post(':id/icon')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @UseInterceptors(FileUploadInterceptor)
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Service icon uploaded successfully',
     type: Service,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Service not found',
   })
-  update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
-    return this.servicesService.updateService(id, updateServiceDto);
+  async uploadIcon(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+  ): Promise<Service> {
+    return this.servicesService.uploadIcon(id, file);
   }
 
-  @Delete(':id')
+  @Patch(':serviceId/pricing-plans/:planId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiOperation({
+    summary: 'Update a pricing plan',
+    description: 'Updates a specific pricing plan within a service',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pricing plan updated successfully',
+    schema: {
+      example: {
+        id: 'plan-uuid',
+        name: 'Updated Plan',
+        description: 'Updated plan description',
+        originalPrice: 1100,
+        finalPrice: 900,
+        billingPeriod: 'one-time',
+        deliveryDays: 7,
+        revisions: 3,
+        isActive: true,
+        isPopular: true,
+        displayOrder: 2,
+        features: [],
+        updatedAt: '2025-08-26T10:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Service or pricing plan not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input format',
+  })
+  updatePricingPlan(
+    @Param('serviceId') serviceId: string,
+    @Param('planId') planId: string,
+    @Body() updatePricingPlanDto: UpdatePricingPlanDto,
+  ) {
+    return this.servicesService.updatePricingPlan(
+      serviceId,
+      planId,
+      updatePricingPlanDto,
+    );
+  }
+
+  @Post(':id/image')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete service (Admin only)' })
+  @UseInterceptors(FileUploadInterceptor)
+  @ApiConsumes('multipart/form-data')
   @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Service deleted successfully',
+    status: HttpStatus.OK,
+    description: 'Service image uploaded successfully',
+    type: Service,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Service not found',
   })
-  remove(@Param('id') id: string) {
-    return this.servicesService.deleteService(id);
+  async uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+  ): Promise<Service> {
+    return this.servicesService.uploadImage(id, file);
   }
 
-  // PROJECT MANAGEMENT (Admin only)
-
-  @Post('projects')
+  @Post(':serviceId/projects')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new project (Admin only)' })
+  @ApiOperation({ summary: 'Create a new project for a service' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Project created successfully',
-    type: Project,
   })
-  createProject(@Body() createProjectDto: CreateProjectDto) {
-    return this.servicesService.createProject(createProjectDto);
+  async createProject(
+    @Param('serviceId') serviceId: string,
+    @Body() createProjectDto: CreateProjectDto,
+  ) {
+    return this.servicesService.createProject(serviceId, createProjectDto);
   }
 
-  @Get('projects/:id')
-  @ApiOperation({ summary: 'Get project by ID' })
+  @Get(':serviceId/projects')
+  @ApiOperation({ summary: 'Get all projects for a service' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Project retrieved successfully',
-    type: Project,
+    description: 'Returns all projects for the service',
   })
-  findProject(@Param('id') id: string) {
-    return this.servicesService.findProjectById(id);
+  async getProjects(@Param('serviceId') serviceId: string) {
+    return this.servicesService.getProjects(serviceId);
   }
 
-  @Patch('projects/:id')
+  @Get('projects/:projectId')
+  @ApiOperation({ summary: 'Get a single project' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Returns the project' })
+  async getProject(@Param('projectId') projectId: string) {
+    return this.servicesService.getProject(projectId);
+  }
+
+  @Patch('projects/:projectId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update project (Admin only)' })
+  @ApiOperation({ summary: 'Update a project' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Project updated successfully',
-    type: Project,
   })
-  updateProject(
-    @Param('id') id: string,
+  async updateProject(
+    @Param('projectId') projectId: string,
     @Body() updateProjectDto: UpdateProjectDto,
   ) {
-    return this.servicesService.updateProject(id, updateProjectDto);
+    return this.servicesService.updateProject(projectId, updateProjectDto);
   }
 
-  @Delete('projects/:id')
+  @Patch(':serviceId/projects/:projectId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete project (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Project deleted successfully',
-  })
-  removeProject(@Param('id') id: string) {
-    return this.servicesService.deleteProject(id);
-  }
-
-  // PRICING PLAN MANAGEMENT (Admin only)
-
-  @Post('pricing-plans/upsert')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
+  @Roles(Role.SuperAdmin)
   @ApiOperation({
-    summary: 'Create or update pricing plan with features (Admin only)',
+    summary: 'Update a project for a service (supports form data)',
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Pricing plan upserted successfully',
-    type: PricingPlan,
-  })
-  upsertPricingPlan(@Body() upsertPricingPlanDto: UpsertPricingPlanDto) {
-    return this.servicesService.upsertPricingPlan(upsertPricingPlanDto);
-  }
-
-  @Post('pricing-plans')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new pricing plan (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Pricing plan created successfully',
-    type: PricingPlan,
-  })
-  createPricingPlan(@Body() createPricingPlanDto: CreatePricingPlanDto) {
-    return this.servicesService.createPricingPlan(createPricingPlanDto);
-  }
-
-  @Get('pricing-plans/:id')
-  @ApiOperation({ summary: 'Get pricing plan by ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Pricing plan retrieved successfully',
-    type: PricingPlan,
-  })
-  findPricingPlan(@Param('id') id: string) {
-    return this.servicesService.findPricingPlanById(id);
-  }
-
-  @Patch('pricing-plans/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update pricing plan (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Pricing plan updated successfully',
-    type: PricingPlan,
-  })
-  updatePricingPlan(
-    @Param('id') id: string,
-    @Body() updatePricingPlanDto: UpdatePricingPlanDto,
+  @ApiConsumes('multipart/form-data')
+  async updateProjectForService(
+    @Param('serviceId') serviceId: string,
+    @Param('projectId') projectId: string,
+    @Body() updateProjectDto: UpdateProjectDto,
   ) {
-    return this.servicesService.updatePricingPlan(id, updatePricingPlanDto);
-  }
-
-  @Delete('pricing-plans/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete pricing plan (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Pricing plan deleted successfully',
-  })
-  removePricingPlan(@Param('id') id: string) {
-    return this.servicesService.deletePricingPlan(id);
-  }
-
-  // FEATURE MANAGEMENT (Admin only)
-
-  @Post('features')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new feature (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Feature created successfully',
-    type: Feature,
-  })
-  createFeature(@Body() createFeatureDto: CreateFeatureDto) {
-    return this.servicesService.createFeature(createFeatureDto);
-  }
-
-  @Get('features')
-  @ApiOperation({ summary: 'Get all features' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Features retrieved successfully',
-    type: [Feature],
-  })
-  findAllFeatures() {
-    return this.servicesService.findAllFeatures();
-  }
-
-  @Get('features/:id')
-  @ApiOperation({ summary: 'Get feature by ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Feature retrieved successfully',
-    type: Feature,
-  })
-  findFeature(@Param('id') id: string) {
-    return this.servicesService.findFeatureById(id);
-  }
-
-  @Patch('features/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update feature (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Feature updated successfully',
-    type: Feature,
-  })
-  updateFeature(
-    @Param('id') id: string,
-    @Body() updateFeatureDto: UpdateFeatureDto,
-  ) {
-    return this.servicesService.updateFeature(id, updateFeatureDto);
-  }
-
-  @Delete('features/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete feature (Admin only)' })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Feature deleted successfully',
-  })
-  removeFeature(@Param('id') id: string) {
-    return this.servicesService.deleteFeature(id);
+    return this.servicesService.updateProjectForService(
+      serviceId,
+      projectId,
+      updateProjectDto,
+    );
   }
 }

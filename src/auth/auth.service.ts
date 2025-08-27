@@ -7,11 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { PinoLogger } from 'nestjs-pino';
-import { ITokenPayload } from './@types/token-payload.interface';
+import { ITokenPayload, TokenUserType } from './@types/token-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigServiceType } from 'src/common/config/config.type';
 import { User } from 'src/users/entities/user.entity';
-import { NODE_ENVIRONMENTS } from 'src/common/@types/enviroments';
 import { UsersService } from 'src/users/users.service';
 import { SignUpDto } from './dtos/sign-up.dto';
 import {
@@ -24,6 +23,8 @@ import { UserRole } from 'src/users/dto/create-user.dto';
 import { CustomerLoginDto } from './dto/customer-login.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminRepository } from './repositories/admin.repository';
+import { CreateAdminDto } from './dto/create-admin.dto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -37,14 +38,43 @@ export class AuthService {
     private readonly adminRepository: AdminRepository,
   ) {}
 
-  async adminLogin(adminLoginDto: AdminLoginDto): Promise<any> {
-    const admin = await this.adminRepository.findByEmail(adminLoginDto.email);
+  async adminLogin(
+    adminLoginDto: AdminLoginDto,
+    response: Response,
+  ): Promise<any> {
+    this.logger.debug('Admin login attempt:', {
+      email: adminLoginDto.email,
+      receivedPassword: adminLoginDto.password,
+    });
 
-    if (!admin || !(await admin.validatePassword(adminLoginDto.password))) {
+    const admin = await this.adminRepository.findByEmail(adminLoginDto.email);
+    if (!admin) {
+      this.logger.warn('Admin not found with email:', adminLoginDto.email);
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Ensure password is a string
+    const password = String(adminLoginDto.password);
+    const isPasswordValid = await admin.validatePassword(password);
+
+    this.logger.info(
+      'Password validation:' +
+        password +
+        admin.password +
+        {
+          receivedPassword: password,
+          storedHash: admin.password,
+          isValid: isPasswordValid,
+        },
+    );
+
+    if (!isPasswordValid) {
+      this.logger.info('Invalid password for admin:' + adminLoginDto.email);
       throw new UnauthorizedException('Invalid email or password');
     }
 
     if (!admin.isActive) {
+      this.logger.warn('Deactivated admin account:', adminLoginDto.email);
       throw new ForbiddenException('Your account has been deactivated');
     }
 
@@ -53,29 +83,43 @@ export class AuthService {
     await this.adminRepository.save(admin);
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessToken(admin.id),
-      this.generateRefreshToken(admin.id),
+      this.generateAccessToken(admin.id, TokenUserType.ADMIN),
+      this.generateRefreshToken(admin.id, TokenUserType.ADMIN),
     ]);
+    response.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 3600 * 1000, // 30 days
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      domain: 'localhost',
+    });
 
     return {
       accessToken,
-      refreshToken,
-      admin: { ...admin, password: undefined },
     };
   }
 
-  async generateAccessToken(userId: string): Promise<string> {
+  async generateAccessToken(
+    userId: string,
+    userType: TokenUserType = TokenUserType.USER,
+  ): Promise<string> {
     const tokenPayload: ITokenPayload = {
       userId,
+      userType,
     };
     return this.jwtService.signAsync(tokenPayload, {
       secret: this.configService.get('JWT_ACCESS_SECRET'),
       expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION'),
     });
   }
-  async generateRefreshToken(userId: string): Promise<string> {
+  async generateRefreshToken(
+    userId: string,
+    userType: TokenUserType = TokenUserType.USER,
+  ): Promise<string> {
     const tokenPayload: ITokenPayload = {
       userId,
+      userType,
     };
     return this.jwtService.signAsync(tokenPayload, {
       secret: this.configService.get('JWT_REFRESH_SECRET'),
@@ -133,11 +177,10 @@ export class AuthService {
     ]);
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      maxAge: 30 * 24 * 3600 * 1000,
-      secure:
-        this.configService.get('NODE_ENV') === NODE_ENVIRONMENTS.PRODUCTION,
-      sameSite: 'none',
-      // domain: '.albayancharity.org', // Note the leading dot to include all subdomains
+      maxAge: 30 * 24 * 3600 * 1000, // 30 days
+      secure: true, // Required for cross-origin cookies
+      sameSite: 'none', // Required for cross-origin cookies
+      path: '/', // Make cookie available on all paths
     });
     return {
       accessToken,
@@ -151,11 +194,10 @@ export class AuthService {
     ]);
     response.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      maxAge: 30 * 24 * 3600 * 1000, //30d,
-      secure:
-        this.configService.get('NODE_ENV') === NODE_ENVIRONMENTS.PRODUCTION,
-      sameSite: 'none',
-      // domain: '.albayancharity.org', // Note the leading dot to include all subdomains
+      maxAge: 30 * 24 * 3600 * 1000, // 30 days
+      secure: true, // Required for cross-origin cookies
+      sameSite: 'none', // Required for cross-origin cookies
+      path: '/', // Make cookie available on all paths
     });
     return {
       accessToken,
@@ -165,6 +207,30 @@ export class AuthService {
     response.clearCookie('refreshToken', {
       // domain: '.albayancharity.org'
     });
+  }
+
+  async createAdmin(createAdminDto: CreateAdminDto) {
+    // Check if admin with this email already exists
+    const existingAdmin = await this.adminRepository.findByEmail(
+      createAdminDto.email,
+    );
+    if (existingAdmin) {
+      throw new BadRequestException('Admin with this email already exists');
+    }
+
+    // Hash the password manually since we're not using the entity's BeforeInsert hook
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(createAdminDto.password, salt);
+
+    // Create and save the admin
+    const savedAdmin = await this.adminRepository.save({
+      ...createAdminDto,
+      password: hashedPassword,
+    });
+
+    // Return the admin without the password
+    const { password, ...result } = savedAdmin;
+    return result;
   }
   async signUp(signUpData: SignUpDto) {
     const user = await this.userService.createUser(signUpData);

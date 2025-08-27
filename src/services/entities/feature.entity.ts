@@ -20,17 +20,10 @@ export class Feature {
   id: string;
 
   @ApiProperty({
-    description: 'Pricing plan ID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @Column({ type: 'uuid', name: 'pricing_plan_id' })
-  pricingPlanId: string;
-
-  @ApiProperty({
     description: 'Feature name',
     example: 'Responsive Design',
   })
-  @Column({ type: 'varchar', length: 200 })
+  @Column({ type: 'varchar', length: 255 })
   name: string;
 
   @ApiProperty({
@@ -41,25 +34,18 @@ export class Feature {
   description?: string;
 
   @ApiProperty({
-    description: 'Feature icon (CSS class or emoji)',
-    example: '✓',
-  })
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  icon?: string;
-
-  @ApiProperty({
-    description: 'Whether the feature is included',
+    description: 'Whether the feature is included in the plan',
     example: true,
   })
   @Column({ type: 'boolean', name: 'is_included', default: true })
   isIncluded: boolean;
 
   @ApiProperty({
-    description: 'Feature quantity or limit',
+    description: 'Feature quantity (e.g., 5 for "5 revisions")',
     example: 5,
   })
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  quantity?: string;
+  @Column({ type: 'integer', nullable: true })
+  quantity?: number;
 
   @ApiProperty({
     description: 'Feature display order',
@@ -84,6 +70,13 @@ export class Feature {
 
   // Relations
   @ApiProperty({
+    description: 'Pricing plan ID this feature belongs to',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @Column({ type: 'uuid', name: 'pricing_plan_id' })
+  pricingPlanId: string;
+
+  @ApiProperty({
     description: 'Pricing plan this feature belongs to',
     type: () => PricingPlan,
   })
@@ -97,9 +90,9 @@ export class Feature {
     example: 'Responsive Design (Up to 5 pages)',
   })
   get displayText(): string {
-    let text = this.name;
+    const text = this.name;
     if (this.quantity) {
-      text += ` (${this.quantity})`;
+      return `${text} (${this.quantity})`;
     }
     return text;
   }

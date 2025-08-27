@@ -17,8 +17,17 @@ async function bootstrap() {
 
     // Enable CORS
     app.enableCors({
-      origin: true,
+      origin: 'http://localhost:3000',
       credentials: true,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Accept',
+        'Origin',
+        'X-Requested-With',
+      ],
+      exposedHeaders: ['Set-Cookie'],
     });
     app.useGlobalFilters(new CustomExceptionFilter());
     app.useGlobalInterceptors(new ResponseInterceptor());
