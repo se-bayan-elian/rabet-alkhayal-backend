@@ -8,6 +8,7 @@ import { ProductsService } from './products.service';
 import { ProductsRepository } from './repositories/products.repository';
 import { ProductOptionsRepository } from './repositories/product-options.repository';
 import { ProductOptionValuesRepository } from './repositories/product-option-values.repository';
+import { CloudinaryService } from '../common/services/cloudinary.service';
 
 @Module({
   imports: [
@@ -19,12 +20,14 @@ import { ProductOptionValuesRepository } from './repositories/product-option-val
     ProductsRepository,
     ProductOptionsRepository,
     ProductOptionValuesRepository,
+    CloudinaryService,
   ],
   exports: [
     ProductsService,
     ProductsRepository,
     ProductOptionsRepository,
     ProductOptionValuesRepository,
+    CloudinaryService,
     TypeOrmModule,
   ],
 })

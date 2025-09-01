@@ -1,13 +1,18 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
 import { CategoriesRepository } from './repositories/categories.repository';
 import { SubcategoriesRepository } from './repositories/subcategories.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryOptionsDto } from '../common/repository/dto/query-options.dto';
-import { QueryOptionsMapper } from '../common/repository/mappers/query-options.mapper';
+import { CloudinaryService } from '../common/services/cloudinary.service';
 import { Category } from './entities/category.entity';
 import { Subcategory } from './entities/subcategory.entity';
+import { QueryOptionsMapper } from 'src/common';
 
 @Injectable()
 export class CategoriesService {
@@ -15,6 +20,7 @@ export class CategoriesService {
     private readonly categoriesRepository: CategoriesRepository,
     private readonly subcategoriesRepository: SubcategoriesRepository,
     private readonly logger: PinoLogger,
+    private readonly cloudinaryService: CloudinaryService,
   ) {
     this.logger.setContext(CategoriesService.name);
   }
@@ -35,12 +41,22 @@ export class CategoriesService {
     // Create category with subcategories
     const categoryData: any = {
       name: createCategoryDto.name,
+      description: createCategoryDto.description,
+      imageUrl: createCategoryDto.imageUrl,
+      imagePublicId: createCategoryDto.imagePublicId,
+      iconUrl: createCategoryDto.iconUrl,
+      iconPublicId: createCategoryDto.iconPublicId,
     };
 
     if (createCategoryDto.subcategories?.length) {
       categoryData.subcategories = createCategoryDto.subcategories.map(
         (sub) => ({
           name: sub.name,
+          description: sub.description,
+          imageUrl: sub.imageUrl,
+          imagePublicId: sub.imagePublicId,
+          iconUrl: sub.iconUrl,
+          iconPublicId: sub.iconPublicId,
         }),
       );
     }
@@ -87,11 +103,28 @@ export class CategoriesService {
     }
 
     // Extract only category fields, exclude subcategories
-    const { subcategories, ...categoryData } = updateCategoryDto;
+    // Allow updating image/icon fields
+    // Omit subcategories from updateData to match entity type
+    // Omit subcategories from updateData
+    // Build updateData and omit subcategories
+    // Explicitly build updateData with only allowed fields
+    const updateData: Partial<Category> = {};
+    if (updateCategoryDto.name !== undefined)
+      updateData.name = updateCategoryDto.name;
+    if (updateCategoryDto.description !== undefined)
+      updateData.description = updateCategoryDto.description;
+    if (updateCategoryDto.imageUrl !== undefined)
+      updateData.imageUrl = updateCategoryDto.imageUrl;
+    if (updateCategoryDto.imagePublicId !== undefined)
+      updateData.imagePublicId = updateCategoryDto.imagePublicId;
+    if (updateCategoryDto.iconUrl !== undefined)
+      updateData.iconUrl = updateCategoryDto.iconUrl;
+    if (updateCategoryDto.iconPublicId !== undefined)
+      updateData.iconPublicId = updateCategoryDto.iconPublicId;
 
     const updatedCategory = await this.categoriesRepository.updateById(
       id,
-      categoryData,
+      updateData,
     );
     this.logger.info(`Category updated successfully: ${id}`);
 
@@ -99,13 +132,46 @@ export class CategoriesService {
   }
 
   async remove(id: string): Promise<void> {
-    this.logger.info(`Soft deleting category with ID: ${id}`);
-    await this.categoriesRepository.softDeleteById(id);
-  }
+    this.logger.info(`Deleting category with ID: ${id}`);
 
-  async restore(id: string): Promise<void> {
-    this.logger.info(`Restoring category with ID: ${id}`);
-    await this.categoriesRepository.restoreById(id);
+    // Find the category to get its Cloudinary public IDs
+    const category = await this.categoriesRepository.findById(id);
+    if (!category) {
+      throw new NotFoundException(`Category with ID '${id}' not found`);
+    }
+
+    // Delete associated images from Cloudinary
+    if (category.imagePublicId) {
+      try {
+        await this.cloudinaryService.deleteFile(category.imagePublicId);
+        this.logger.info(
+          `Deleted category image from Cloudinary: ${category.imagePublicId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to delete category image from Cloudinary: ${error.message}`,
+        );
+        // Continue with deletion even if Cloudinary deletion fails
+      }
+    }
+
+    if (category.iconPublicId) {
+      try {
+        await this.cloudinaryService.deleteFile(category.iconPublicId);
+        this.logger.info(
+          `Deleted category icon from Cloudinary: ${category.iconPublicId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to delete category icon from Cloudinary: ${error.message}`,
+        );
+        // Continue with deletion even if Cloudinary deletion fails
+      }
+    }
+
+    // Delete the category from database
+    await this.categoriesRepository.deleteById(id);
+    this.logger.info(`Category deleted successfully: ${id}`);
   }
 
   async getCategoriesWithStats() {
@@ -117,6 +183,11 @@ export class CategoriesService {
   async createSubcategory(
     categoryId: string,
     name: string,
+    description?: string,
+    imageUrl?: string,
+    imagePublicId?: string,
+    iconUrl?: string,
+    iconPublicId?: string,
   ): Promise<Subcategory> {
     this.logger.info(
       `Creating subcategory '${name}' for category: ${categoryId}`,
@@ -137,6 +208,11 @@ export class CategoriesService {
     const subcategory = await this.subcategoriesRepository.create({
       name,
       categoryId,
+      description,
+      imageUrl,
+      imagePublicId,
+      iconUrl,
+      iconPublicId,
     });
 
     this.logger.info(
@@ -154,10 +230,21 @@ export class CategoriesService {
     );
   }
 
-  async updateSubcategory(id: string, name: string): Promise<Subcategory> {
+  async updateSubcategory(
+    id: string,
+    name: string,
+    description?: string,
+    imageUrl?: string,
+    imagePublicId?: string,
+    iconUrl?: string,
+    iconPublicId?: string,
+  ): Promise<Subcategory> {
     this.logger.info(`Updating subcategory with ID: ${id}`);
 
     const subcategory = await this.subcategoriesRepository.findById(id);
+    if (!subcategory) {
+      throw new NotFoundException(`Subcategory with ID '${id}' not found`);
+    }
 
     // Check if new name conflicts within the same category
     if (name !== subcategory.name) {
@@ -174,9 +261,16 @@ export class CategoriesService {
       }
     }
 
+    const updateData: any = { name };
+    if (description !== undefined) updateData.description = description;
+    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (imagePublicId !== undefined) updateData.imagePublicId = imagePublicId;
+    if (iconUrl !== undefined) updateData.iconUrl = iconUrl;
+    if (iconPublicId !== undefined) updateData.iconPublicId = iconPublicId;
+
     const updatedSubcategory = await this.subcategoriesRepository.updateById(
       id,
-      { name },
+      updateData,
     );
     this.logger.info(`Subcategory updated successfully: ${id}`);
 
@@ -184,8 +278,45 @@ export class CategoriesService {
   }
 
   async removeSubcategory(id: string): Promise<void> {
-    this.logger.info(`Soft deleting subcategory with ID: ${id}`);
-    await this.subcategoriesRepository.softDeleteById(id);
+    this.logger.info(`Deleting subcategory with ID: ${id}`);
+
+    const subcategory = await this.subcategoriesRepository.findById(id);
+    if (!subcategory) {
+      throw new NotFoundException(`Subcategory with ID '${id}' not found`);
+    }
+
+    // Delete associated images from Cloudinary
+    if (subcategory.imagePublicId) {
+      try {
+        await this.cloudinaryService.deleteFile(subcategory.imagePublicId);
+        this.logger.info(
+          `Deleted subcategory image from Cloudinary: ${subcategory.imagePublicId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to delete subcategory image from Cloudinary: ${error.message}`,
+        );
+        // Continue with deletion even if Cloudinary deletion fails
+      }
+    }
+
+    if (subcategory.iconPublicId) {
+      try {
+        await this.cloudinaryService.deleteFile(subcategory.iconPublicId);
+        this.logger.info(
+          `Deleted subcategory icon from Cloudinary: ${subcategory.iconPublicId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to delete subcategory icon from Cloudinary: ${error.message}`,
+        );
+        // Continue with deletion even if Cloudinary deletion fails
+      }
+    }
+
+    // Delete the subcategory from database
+    await this.subcategoriesRepository.deleteById(id);
+    this.logger.info(`Subcategory deleted successfully: ${id}`);
   }
 
   async getSubcategoriesWithStats(categoryId?: string) {

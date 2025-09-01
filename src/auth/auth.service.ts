@@ -3,6 +3,9 @@ import {
   ForbiddenException,
   Injectable,
   UnauthorizedException,
+  forwardRef,
+  Inject,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
@@ -32,6 +35,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<ConfigServiceType>,
     private readonly logger: PinoLogger,
+    @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService,
     private readonly verificationService: VerificationService,
     private readonly emailService: EmailService,
@@ -269,5 +273,39 @@ export class AuthService {
     return {
       message: 'Email verified successfully',
     };
+  }
+
+  async getAllAdmins(filters?: {
+    search?: string;
+    isActive?: boolean;
+    role?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    this.logger.info('Fetching all admins with filters:', filters);
+    return this.adminRepository.findAllAdmins(filters);
+  }
+
+  async getAdminById(id: string) {
+    this.logger.info(`Fetching admin with ID: ${id}`);
+    return this.adminRepository.findById(id);
+  }
+
+  async updateAdmin(id: string, updateData: any) {
+    this.logger.info(`Updating admin with ID: ${id}`);
+    const admin = await this.adminRepository.findById(id);
+    if (!admin) {
+      throw new NotFoundException(`Admin with ID ${id} not found`);
+    }
+    const updatedAdmin = await this.adminRepository.save({
+      ...admin,
+      ...updateData,
+    });
+    return updatedAdmin;
+  }
+
+  async getAdminStats() {
+    this.logger.info('Fetching admin statistics');
+    return this.adminRepository.getAdminStats();
   }
 }

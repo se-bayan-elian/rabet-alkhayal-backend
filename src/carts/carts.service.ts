@@ -30,7 +30,7 @@ export class CartsService extends BaseRepository<Cart> {
    */
   async getOrCreateCart(userId: string): Promise<Cart> {
     this.logger.info(`Getting or creating cart for user: ${userId}`);
-    
+
     let cart = await this.cartRepository.findOne({
       where: { userId },
       relations: ['items', 'items.product', 'items.customizations'],
@@ -50,14 +50,14 @@ export class CartsService extends BaseRepository<Cart> {
    */
   async addToCart(userId: string, addToCartDto: AddToCartDto): Promise<Cart> {
     this.logger.info(`Adding item to cart for user: ${userId}`);
-    
+
     const cart = await this.getOrCreateCart(userId);
-    
+
     // Check if item with same product and customizations already exists
     const existingItem = await this.findExistingCartItem(
       cart.id,
       addToCartDto.productId,
-      addToCartDto.customizations || []
+      addToCartDto.customizations || [],
     );
 
     if (existingItem) {
@@ -78,15 +78,15 @@ export class CartsService extends BaseRepository<Cart> {
 
       // Add customizations if any
       if (addToCartDto.customizations?.length) {
-        const customizations = addToCartDto.customizations.map(cust => 
+        const customizations = addToCartDto.customizations.map((cust) =>
           this.cartCustomizationRepository.create({
             cartItemId: savedCartItem.id,
             optionId: cust.optionId,
-            optionName: cust.optionName,
-            selectedValue: cust.selectedValue,
+            questionText: cust.questionText,
+            selectedAnswer: cust.selectedAnswer,
             customerInput: cust.customerInput,
             additionalPrice: cust.additionalPrice,
-          })
+          }),
         );
         await this.cartCustomizationRepository.save(customizations);
       }
@@ -103,12 +103,12 @@ export class CartsService extends BaseRepository<Cart> {
   async updateCartItem(
     userId: string,
     cartItemId: string,
-    updateDto: UpdateCartItemDto
+    updateDto: UpdateCartItemDto,
   ): Promise<Cart> {
     this.logger.info(`Updating cart item: ${cartItemId} for user: ${userId}`);
-    
+
     const cart = await this.getOrCreateCart(userId);
-    
+
     const cartItem = await this.cartItemRepository.findOne({
       where: { id: cartItemId, cartId: cart.id },
     });
@@ -131,10 +131,12 @@ export class CartsService extends BaseRepository<Cart> {
    * Remove item from cart
    */
   async removeFromCart(userId: string, cartItemId: string): Promise<Cart> {
-    this.logger.info(`Removing item from cart: ${cartItemId} for user: ${userId}`);
-    
+    this.logger.info(
+      `Removing item from cart: ${cartItemId} for user: ${userId}`,
+    );
+
     const cart = await this.getOrCreateCart(userId);
-    
+
     const cartItem = await this.cartItemRepository.findOne({
       where: { id: cartItemId, cartId: cart.id },
       relations: ['customizations'],
@@ -160,9 +162,9 @@ export class CartsService extends BaseRepository<Cart> {
    */
   async clearCart(userId: string): Promise<void> {
     this.logger.info(`Clearing cart for user: ${userId}`);
-    
+
     const cart = await this.getOrCreateCart(userId);
-    
+
     await this.cartItemRepository.delete({ cartId: cart.id });
   }
 
@@ -192,7 +194,13 @@ export class CartsService extends BaseRepository<Cart> {
   private async findExistingCartItem(
     cartId: string,
     productId: string,
-    customizations: Array<{ optionId: string; optionName: string; selectedValue?: string; customerInput?: string; additionalPrice: number }>
+    customizations: Array<{
+      optionId: string;
+      questionText: string;
+      selectedAnswer?: string;
+      customerInput?: string;
+      additionalPrice: number;
+    }>,
   ): Promise<CartItem | null> {
     const cartItems = await this.cartItemRepository.find({
       where: { cartId, productId },
@@ -202,7 +210,7 @@ export class CartsService extends BaseRepository<Cart> {
     // Find item with matching customizations
     for (const item of cartItems) {
       const itemCustomizations = item.customizations || [];
-      
+
       if (this.customizationsMatch(itemCustomizations, customizations)) {
         return item;
       }
@@ -213,14 +221,20 @@ export class CartsService extends BaseRepository<Cart> {
 
   private customizationsMatch(
     existing: CartCustomization[],
-    newCustomizations: Array<{ optionId: string; optionName: string; selectedValue?: string; customerInput?: string; additionalPrice: number }>
+    newCustomizations: Array<{
+      optionId: string;
+      questionText: string;
+      selectedAnswer?: string;
+      customerInput?: string;
+      additionalPrice: number;
+    }>,
   ): boolean {
     if (existing.length !== newCustomizations.length) {
       return false;
     }
 
-    const existingIds = existing.map(c => c.optionId).sort();
-    const newIds = newCustomizations.map(c => c.optionId).sort();
+    const existingIds = existing.map((c) => c.optionId).sort();
+    const newIds = newCustomizations.map((c) => c.optionId).sort();
 
     return existingIds.every((id, index) => id === newIds[index]);
   }

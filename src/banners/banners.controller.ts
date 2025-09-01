@@ -76,7 +76,7 @@ export class BannersController {
   // ADMIN ENDPOINTS
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new banner (Admin only)' })
   @ApiResponse({
@@ -94,7 +94,7 @@ export class BannersController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all banners (Admin only)' })
   @ApiResponse({
@@ -130,7 +130,7 @@ export class BannersController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get banner by ID (Admin only)' })
   @ApiParam({ name: 'id', description: 'Banner ID' })
@@ -149,7 +149,7 @@ export class BannersController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update banner (Admin only)' })
   @ApiParam({ name: 'id', description: 'Banner ID' })
@@ -175,7 +175,7 @@ export class BannersController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete banner (Admin only)' })
   @ApiParam({ name: 'id', description: 'Banner ID' })
@@ -193,7 +193,7 @@ export class BannersController {
 
   @Get(':id/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get banner statistics (Admin only)' })
   @ApiParam({ name: 'id', description: 'Banner ID' })
@@ -217,7 +217,7 @@ export class BannersController {
 
   @Patch(':id/reorder')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update banner display order (Admin only)' })
   @ApiParam({ name: 'id', description: 'Banner ID' })

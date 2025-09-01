@@ -8,7 +8,6 @@ import {
   Delete,
   Query,
   HttpStatus,
-  Put,
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
@@ -38,7 +37,7 @@ export class ProductsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiOperation({ summary: 'Create a new product with options and values' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -182,7 +181,7 @@ export class ProductsController {
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.SuperAdmin)
   @ApiOperation({ summary: 'Update product by ID' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -202,8 +201,8 @@ export class ProductsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiOperation({ summary: 'Delete product by ID (soft delete)' })
+  @Roles(Role.SuperAdmin)
+  @ApiOperation({ summary: 'Delete product by ID' })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'Product deleted successfully',
@@ -214,21 +213,5 @@ export class ProductsController {
   })
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
-  }
-
-  @Put(':id/restore')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
-  @ApiOperation({ summary: 'Restore soft deleted product' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Product restored successfully',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Product not found',
-  })
-  restore(@Param('id') id: string) {
-    return this.productsService.restore(id);
   }
 }

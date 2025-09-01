@@ -1,7 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToOne } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToOne,
+  OneToMany,
+} from 'typeorm';
 import { UserRole } from '../dto/create-user.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { Cart } from '../../carts/entities/cart.entity';
+import { Review } from '../../reviews/entities/review.entity';
 
 @Entity()
 export class User {
@@ -82,4 +89,11 @@ export class User {
   })
   @OneToOne(() => Cart, (cart) => cart.user)
   cart: Cart;
+
+  @ApiProperty({
+    description: 'User reviews',
+    type: () => [Review],
+  })
+  @OneToMany(() => Review, (review) => review.user)
+  reviews: Review[];
 }

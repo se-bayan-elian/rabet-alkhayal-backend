@@ -82,4 +82,16 @@ export class CreateUserDto {
     message: 'Invalid Phone Number format',
   })
   phoneNumber: string;
+
+  @ApiProperty({
+    description: 'Password (required for admin role)',
+    example: 'StrongPassword123',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  @MinLength(8, {
+    message: 'Password must be at least 8 characters long',
+  })
+  password?: string;
 }

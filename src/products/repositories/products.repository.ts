@@ -30,8 +30,8 @@ export class ProductsRepository extends BaseRepository<Product> {
       ],
       relations: [
         'subcategory',
-        'options',
-        'options.values',
+        'questions',
+        'questions.answers',
         ...(queryOptions?.relations || []),
       ],
     };
@@ -49,8 +49,8 @@ export class ProductsRepository extends BaseRepository<Product> {
     const queryBuilder = this.createQueryBuilder('product')
       .leftJoinAndSelect('product.subcategory', 'subcategory')
       .leftJoinAndSelect('subcategory.category', 'category')
-      .leftJoinAndSelect('product.options', 'options')
-      .leftJoinAndSelect('options.values', 'values')
+      .leftJoinAndSelect('product.questions', 'questions')
+      .leftJoinAndSelect('questions.answers', 'answers')
       .where('category.id = :categoryId', { categoryId });
 
     // Apply other query options
@@ -91,8 +91,8 @@ export class ProductsRepository extends BaseRepository<Product> {
       relations: [
         'subcategory',
         'subcategory.category',
-        'options',
-        'options.values',
+        'questions',
+        'questions.answers',
         ...(queryOptions?.relations || []),
       ],
     };
@@ -120,8 +120,8 @@ export class ProductsRepository extends BaseRepository<Product> {
       ],
       relations: [
         'subcategory',
-        'options',
-        'options.values',
+        'questions',
+        'questions.answers',
         ...(queryOptions?.relations || []),
       ],
     };
@@ -138,8 +138,8 @@ export class ProductsRepository extends BaseRepository<Product> {
       relations: [
         'subcategory',
         'subcategory.category',
-        'options',
-        'options.values',
+        'questions',
+        'questions.answers',
         ...(queryOptions?.relations || []),
       ],
     };
@@ -210,8 +210,8 @@ export class ProductsRepository extends BaseRepository<Product> {
   async findMostSoldProducts(limit: number = 8): Promise<Product[]> {
     const queryBuilder = this.createQueryBuilder('product')
       .leftJoinAndSelect('product.subcategory', 'subcategory')
-      .leftJoinAndSelect('product.options', 'options')
-      .leftJoinAndSelect('options.values', 'values')
+      .leftJoinAndSelect('product.questions', 'questions')
+      .leftJoinAndSelect('questions.answers', 'answers')
       .leftJoin('product.cartItems', 'cartItem')
       .leftJoin('cartItem.cart', 'cart')
       .leftJoin('cart.orders', 'order')
@@ -221,8 +221,8 @@ export class ProductsRepository extends BaseRepository<Product> {
       })
       .groupBy('product.id')
       .addGroupBy('subcategory.id')
-      .addGroupBy('options.id')
-      .addGroupBy('values.id')
+      .addGroupBy('questions.id')
+      .addGroupBy('answers.id')
       .orderBy('SUM(cartItem.quantity)', 'DESC')
       .limit(limit);
 

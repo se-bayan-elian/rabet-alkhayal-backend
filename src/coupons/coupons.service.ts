@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PinoLogger } from 'nestjs-pino';
@@ -31,7 +35,9 @@ export class CouponsService {
     });
 
     if (existingCoupon) {
-      throw new BadRequestException(`Coupon with code ${createCouponDto.code} already exists`);
+      throw new BadRequestException(
+        `Coupon with code ${createCouponDto.code} already exists`,
+      );
     }
 
     // Validate dates
@@ -43,7 +49,10 @@ export class CouponsService {
     }
 
     // Validate percentage discount
-    if (createCouponDto.discountType === 'percentage' && createCouponDto.discountValue > 100) {
+    if (
+      createCouponDto.discountType === 'percentage' &&
+      createCouponDto.discountValue > 100
+    ) {
       throw new BadRequestException('Percentage discount cannot exceed 100%');
     }
 
@@ -62,7 +71,9 @@ export class CouponsService {
     const queryBuilder = this.couponRepository.createQueryBuilder('coupon');
 
     if (filters.isActive !== undefined) {
-      queryBuilder.andWhere('coupon.isActive = :isActive', { isActive: filters.isActive });
+      queryBuilder.andWhere('coupon.isActive = :isActive', {
+        isActive: filters.isActive,
+      });
     }
 
     if (filters.search) {
@@ -76,19 +87,22 @@ export class CouponsService {
     if (filters.isValid !== undefined) {
       const now = new Date();
       if (filters.isValid) {
+        // Valid coupons: active, within date range (inclusive), and usage limit not exceeded
         queryBuilder
           .andWhere('coupon.isActive = true')
-          .andWhere('coupon.startDate <= :now', { now })
-          .andWhere('coupon.expiryDate > :now', { now })
-          .andWhere('(coupon.usageLimit IS NULL OR coupon.usedCount < coupon.usageLimit)');
+          .andWhere('coupon.startDate <= :startNow', { startNow: now })
+          .andWhere('coupon.expiryDate >= :expiryNow', { expiryNow: now })
+          .andWhere(
+            '(coupon.usageLimit IS NULL OR coupon.usedCount < coupon.usageLimit)',
+          );
       } else {
+        // Invalid coupons: NOT (active AND within date range AND usage limit not exceeded)
         queryBuilder.andWhere(
-          '(coupon.isActive = false OR coupon.startDate > :now OR coupon.expiryDate <= :now OR (coupon.usageLimit IS NOT NULL AND coupon.usedCount >= coupon.usageLimit))',
-          { now },
+          'NOT (coupon.isActive = true AND coupon.startDate <= :invalidStartNow AND coupon.expiryDate >= :invalidExpiryNow AND (coupon.usageLimit IS NULL OR coupon.usedCount < coupon.usageLimit))',
+          { invalidStartNow: now, invalidExpiryNow: now },
         );
       }
     }
-
     queryBuilder.orderBy('coupon.createdAt', 'DESC');
 
     return queryBuilder.getMany();
@@ -134,14 +148,20 @@ export class CouponsService {
       });
 
       if (existingCoupon) {
-        throw new BadRequestException(`Coupon with code ${updateCouponDto.code} already exists`);
+        throw new BadRequestException(
+          `Coupon with code ${updateCouponDto.code} already exists`,
+        );
       }
     }
 
     // Validate dates if provided
     if (updateCouponDto.startDate || updateCouponDto.expiryDate) {
-      const startDate = updateCouponDto.startDate ? new Date(updateCouponDto.startDate) : coupon.startDate;
-      const expiryDate = updateCouponDto.expiryDate ? new Date(updateCouponDto.expiryDate) : coupon.expiryDate;
+      const startDate = updateCouponDto.startDate
+        ? new Date(updateCouponDto.startDate)
+        : coupon.startDate;
+      const expiryDate = updateCouponDto.expiryDate
+        ? new Date(updateCouponDto.expiryDate)
+        : coupon.expiryDate;
 
       if (expiryDate <= startDate) {
         throw new BadRequestException('Expiry date must be after start date');
@@ -149,7 +169,10 @@ export class CouponsService {
     }
 
     // Validate percentage discount
-    if (updateCouponDto.discountType === 'percentage' && updateCouponDto.discountValue > 100) {
+    if (
+      updateCouponDto.discountType === 'percentage' &&
+      updateCouponDto.discountValue > 100
+    ) {
       throw new BadRequestException('Percentage discount cannot exceed 100%');
     }
 
@@ -185,18 +208,29 @@ export class CouponsService {
     const stats = {
       totalUsage: coupon.usedCount,
       remainingUsage: coupon.remainingUsage,
-      usageRate: coupon.usageLimit ? (coupon.usedCount / coupon.usageLimit) * 100 : null,
+      usageRate: coupon.usageLimit
+        ? (coupon.usedCount / coupon.usageLimit) * 100
+        : null,
       isValid: coupon.isValid,
       isExpired: coupon.isExpired,
-      daysUntilExpiry: Math.ceil((coupon.expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+      daysUntilExpiry: Math.ceil(
+        (coupon.expiryDate.getTime() - new Date().getTime()) /
+          (1000 * 60 * 60 * 24),
+      ),
     };
 
     return stats;
   }
 
   // Method for applying coupon (used by orders service)
-  async applyCoupon(code: string, orderTotal: number, userId?: string): Promise<{ coupon: Coupon; discount: number }> {
-    this.logger.info(`Applying coupon ${code} to order total ${orderTotal}`);
+  async applyCoupon(
+    code: string,
+    orderTotal: number,
+    userId?: string,
+  ): Promise<{ coupon: Coupon; discount: number }> {
+    this.logger.info(
+      `Applying coupon ${code} to order total ${orderTotal}${userId ? ` for user ${userId}` : ''}`,
+    );
 
     const coupon = await this.findByCode(code);
 
@@ -204,10 +238,21 @@ export class CouponsService {
       throw new BadRequestException('Coupon is not valid or has expired');
     }
 
+    // Check usage limit per user if specified
+    if (userId && coupon.usageLimitPerUser) {
+      // TODO: Implement user-specific usage tracking
+      // This would require a separate table to track per-user coupon usage
+      this.logger.warn(
+        `Per-user limit check not implemented yet for user ${userId}`,
+      );
+    }
+
     const discount = coupon.calculateDiscount(orderTotal);
 
     if (discount === 0) {
-      throw new BadRequestException('Order does not meet minimum requirements for this coupon');
+      throw new BadRequestException(
+        'Order does not meet minimum requirements for this coupon',
+      );
     }
 
     return { coupon, discount };

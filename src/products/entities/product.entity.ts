@@ -12,6 +12,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Subcategory } from '../../categories/entities/subcategory.entity';
 import { ProductOption } from './product-option.entity';
 import { CartItem } from '../../carts/entities/cart-item.entity';
+import { Review } from '../../reviews/entities/review.entity';
 
 @Entity('products')
 export class Product {
@@ -63,6 +64,22 @@ export class Product {
   isFeatured: boolean;
 
   @ApiProperty({
+    description: 'Product image URL',
+    example: 'https://cdn.example.com/product-image.jpg',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true, name: 'image_url' })
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Product image Cloudinary public ID',
+    example: 'products/images/product-123',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true, name: 'image_public_id' })
+  imagePublicId?: string;
+
+  @ApiProperty({
     description: 'Subcategory ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
@@ -80,11 +97,13 @@ export class Product {
   subcategory: Subcategory;
 
   @ApiProperty({
-    description: 'Product options (customizations)',
+    description: 'Product questions (customizations)',
     type: () => [ProductOption],
   })
-  @OneToMany(() => ProductOption, (option) => option.product, { cascade: true })
-  options: ProductOption[];
+  @OneToMany(() => ProductOption, (question) => question.product, {
+    cascade: true,
+  })
+  questions: ProductOption[];
 
   @ApiProperty({
     description: 'Cart items containing this product',
@@ -92,6 +111,13 @@ export class Product {
   })
   @OneToMany(() => CartItem, (cartItem) => cartItem.product)
   cartItems: CartItem[];
+
+  @ApiProperty({
+    description: 'Product reviews',
+    type: () => [Review],
+  })
+  @OneToMany(() => Review, (review) => review.product)
+  reviews: Review[];
 
   @ApiProperty({
     description: 'Creation date',

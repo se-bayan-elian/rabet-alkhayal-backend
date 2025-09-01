@@ -1,4 +1,12 @@
-import { IsUUID, IsNumber, IsOptional, IsArray, ValidateNested, Min, IsString } from 'class-validator';
+import {
+  IsUUID,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  Min,
+  IsString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -11,19 +19,35 @@ export class CartCustomizationDto {
   optionId: string;
 
   @ApiProperty({
-    description: 'Option name',
-    example: 'Size',
+    description: 'Question text',
+    example: 'What size would you like?',
   })
   @IsString()
-  optionName: string;
+  questionText: string;
 
   @ApiPropertyOptional({
-    description: 'Selected value for predefined options',
-    example: 'XL',
+    description: 'Selected answer for predefined questions',
+    example: 'Large',
   })
   @IsOptional()
   @IsString()
-  selectedValue?: string;
+  selectedAnswer?: string;
+
+  @ApiPropertyOptional({
+    description: 'Selected value image URL',
+    example: 'https://cdn.example.com/option-image.jpg',
+  })
+  @IsOptional()
+  @IsString()
+  selectedValueImageUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Selected value image public ID',
+    example: 'option-values/image/123',
+  })
+  @IsOptional()
+  @IsString()
+  selectedValueImagePublicId?: string;
 
   @ApiPropertyOptional({
     description: 'Customer input for text fields',

@@ -821,7 +821,64 @@ For convenience, the subcategory-specific endpoint is still available:
 
 GET /products/subcategory/{subcategoryId}
 
-```
+````
 
 This endpoint supports all the same query parameters as the main endpoint.
+
+---
+
+## Products API - Create/Update with Questions System
+
+**📋 Complete documentation available in: [PRODUCTS_API_EXAMPLES.md](PRODUCTS_API_EXAMPLES.md)**
+
+The Products API now uses a **questions-based system** where admins can create customizable product questions with various answer types:
+
+- **SELECT**: Multiple choice with predefined answers
+- **TEXT**: Free text input from customers
+- **IMAGE**: Customer image uploads
+- **CHECKBOX**: Multiple selection options
+- **NOTE**: Multi-line text input
+
+### Key Features
+
+- Product-level images with Cloudinary integration
+- Featured product support
+- Flexible question customization
+- Cart integration with customer selections
+- Comprehensive validation and error handling
+
+### Quick Example
+
+```json
+{
+  "name": "Custom T-Shirt",
+  "originalPrice": 29.99,
+  "discountedPrice": 24.99,
+  "imageUrl": "https://cdn.example.com/tshirt.jpg",
+  "imagePublicId": "products/tshirt-123",
+  "isFeatured": false,
+  "questions": [
+    {
+      "questionText": "What size would you like?",
+      "type": "SELECT",
+      "required": true,
+      "answers": [
+        {"answerText": "Small", "extraPrice": 0},
+        {"answerText": "Large", "extraPrice": 2.00}
+      ]
+    },
+    {
+      "questionText": "Add a custom message",
+      "type": "TEXT",
+      "required": false,
+      "answers": []
+    }
+  ]
+}
+````
+
+For detailed examples, request/response formats, and error handling, see **[PRODUCTS_API_EXAMPLES.md](PRODUCTS_API_EXAMPLES.md)**.
+
+```
+
 ```

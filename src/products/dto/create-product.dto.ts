@@ -16,15 +16,33 @@ import { OptionType } from '../../common/helpers/enums';
 
 export class CreateProductOptionValueDto {
   @ApiProperty({
-    description: 'Option value',
+    description: 'Answer text/value',
     example: 'Large',
   })
   @IsString()
   @IsNotEmpty()
-  value: string;
+  answerText: string;
 
   @ApiProperty({
-    description: 'Extra price for this option value',
+    description: 'Answer image URL (for IMAGE type questions)',
+    example: 'https://cdn.example.com/answer-image.jpg',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Answer image Cloudinary public ID',
+    example: 'answers/images/answer-123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
+
+  @ApiProperty({
+    description: 'Extra price for this answer',
     example: 10.0,
     default: 0,
   })
@@ -37,15 +55,15 @@ export class CreateProductOptionValueDto {
 
 export class CreateProductOptionDto {
   @ApiProperty({
-    description: 'Option name',
-    example: 'Size',
+    description: 'Question text for this option',
+    example: 'What size would you like?',
   })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  questionText: string;
 
   @ApiProperty({
-    description: 'Option type',
+    description: 'Question type',
     enum: OptionType,
     example: OptionType.SELECT,
   })
@@ -53,7 +71,7 @@ export class CreateProductOptionDto {
   type: OptionType;
 
   @ApiProperty({
-    description: 'Whether this option is required',
+    description: 'Whether this question is required',
     example: true,
     default: false,
   })
@@ -62,7 +80,7 @@ export class CreateProductOptionDto {
   required?: boolean = false;
 
   @ApiProperty({
-    description: 'Available values for this option',
+    description: 'Available answers for this question',
     type: [CreateProductOptionValueDto],
     required: false,
   })
@@ -70,7 +88,7 @@ export class CreateProductOptionDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProductOptionValueDto)
-  values?: CreateProductOptionValueDto[];
+  answers?: CreateProductOptionValueDto[];
 }
 
 export class CreateProductDto {
@@ -126,13 +144,30 @@ export class CreateProductDto {
   subcategoryId: string;
 
   @ApiProperty({
-    description: 'Product options (customizations)',
-    type: [CreateProductOptionDto],
+    description: 'Product image URL',
+    example: 'https://cdn.example.com/product-image.jpg',
     required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Product image Cloudinary public ID',
+    example: 'products/images/product-123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
+
+  @ApiProperty({
+    description: 'Product questions (customizations)',
+    type: [CreateProductOptionDto],
   })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProductOptionDto)
-  options?: CreateProductOptionDto[];
+  questions?: CreateProductOptionDto[];
 }

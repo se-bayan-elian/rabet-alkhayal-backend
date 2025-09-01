@@ -29,11 +29,11 @@ export class ProductOption {
   productId: string;
 
   @ApiProperty({
-    description: 'Option name',
-    example: 'Size',
+    description: 'Question text for this option',
+    example: 'What size would you like?',
   })
-  @Column({ type: 'varchar' })
-  name: string;
+  @Column({ type: 'varchar', name: 'question_text' })
+  questionText: string;
 
   @ApiProperty({
     description: 'Option type',
@@ -51,28 +51,28 @@ export class ProductOption {
   required: boolean;
 
   @ApiProperty({
-    description: 'Product this option belongs to',
+    description: 'Product this question belongs to',
     type: () => Product,
   })
-  @ManyToOne(() => Product, (product) => product.options, {
+  @ManyToOne(() => Product, (product) => product.questions, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
   @ApiProperty({
-    description: 'Available values for this option',
+    description: 'Available answers for this question',
     type: () => [ProductOptionValue],
   })
-  @OneToMany(() => ProductOptionValue, (value) => value.option, {
+  @OneToMany(() => ProductOptionValue, (answer) => answer.question, {
     cascade: true,
   })
-  values: ProductOptionValue[];
+  answers: ProductOptionValue[];
 
   @ApiProperty({
-    description: 'Cart customizations using this option',
+    description: 'Cart customizations using this question',
     type: () => [CartCustomization],
   })
-  @OneToMany(() => CartCustomization, (customization) => customization.option)
+  @OneToMany(() => CartCustomization, (customization) => customization.question)
   cartCustomizations: CartCustomization[];
 }

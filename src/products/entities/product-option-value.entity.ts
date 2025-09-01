@@ -25,11 +25,27 @@ export class ProductOptionValue {
   optionId: string;
 
   @ApiProperty({
-    description: 'Option value',
+    description: 'Answer text/value',
     example: 'Large',
   })
-  @Column({ type: 'varchar' })
-  value: string;
+  @Column({ type: 'varchar', name: 'answer_text' })
+  answerText: string;
+
+  @ApiProperty({
+    description: 'Answer image URL (for IMAGE type questions)',
+    example: 'https://cdn.example.com/answer-image.jpg',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true, name: 'image_url' })
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Answer image Cloudinary public ID',
+    example: 'answers/images/answer-123',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true, name: 'image_public_id' })
+  imagePublicId?: string;
 
   @ApiProperty({
     description: 'Extra price for this option value',
@@ -45,12 +61,12 @@ export class ProductOptionValue {
   extraPrice: number;
 
   @ApiProperty({
-    description: 'Product option this value belongs to',
+    description: 'Question this answer belongs to',
     type: () => ProductOption,
   })
-  @ManyToOne(() => ProductOption, (option) => option.values, {
+  @ManyToOne(() => ProductOption, (question) => question.answers, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'option_id' })
-  option: ProductOption;
+  question: ProductOption;
 }

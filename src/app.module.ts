@@ -17,6 +17,9 @@ import { CouponsModule } from './coupons/coupons.module';
 import { BannersModule } from './banners/banners.module';
 import { HeaderResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
 import * as path from 'path';
+import { CategoriesModule } from './categories/categories.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { SettingsModule } from './settings/settings.module';
 @Module({
   imports: [
     CustomConfigModule,
@@ -32,6 +35,9 @@ import * as path from 'path';
     ServicesModule,
     CouponsModule,
     BannersModule,
+    CategoriesModule,
+    ReviewsModule,
+    SettingsModule,
     I18nModule.forRoot({
       fallbackLanguage: 'en',
       loaderOptions: {

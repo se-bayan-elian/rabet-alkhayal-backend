@@ -26,11 +26,52 @@ export class Category {
   name: string;
 
   @ApiProperty({
+    description: 'Category description',
+    example: 'Electronic devices and accessories',
+    required: false,
+  })
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
+  @ApiProperty({
+    description: 'Category image URL',
+    example: 'https://cdn.example.com/category.jpg',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Category image Cloudinary public ID',
+    example: 'categories/image/123',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  imagePublicId?: string;
+
+  @ApiProperty({
+    description: 'Category icon URL',
+    example: 'https://cdn.example.com/icon.png',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  iconUrl?: string;
+
+  @ApiProperty({
+    description: 'Category icon Cloudinary public ID',
+    example: 'categories/icon/123',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  iconPublicId?: string;
+
+  @ApiProperty({
     description: 'Category subcategories',
     type: () => [Subcategory],
   })
   @OneToMany(() => Subcategory, (subcategory) => subcategory.category, {
     cascade: true,
+    onDelete: 'CASCADE',
   })
   subcategories: Subcategory[];
 

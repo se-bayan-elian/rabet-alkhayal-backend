@@ -112,7 +112,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async findOneOrFail(options: FindOneOptions<T>): Promise<T> {
     try {
       const entity = await this.repository.findOne(options);
-
       if (!entity) {
         throw new NotFoundException(`${this.entityName} not found`);
       }
@@ -133,7 +132,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     try {
       const queryBuilder = this.createQueryBuilder();
       this.applyQueryOptions(queryBuilder, queryOptions);
-
       return await queryBuilder.getMany();
     } catch (error) {
       this.handleError(error, 'findMany');
@@ -149,16 +147,12 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     try {
       const queryBuilder = this.createQueryBuilder();
       this.applyQueryOptions(queryBuilder, queryOptions);
-
       const { pagination = { page: 1, limit: 10 } } = queryOptions || {};
       const { page, limit } = pagination;
       const offset = (page - 1) * limit;
-
       queryBuilder.skip(offset).take(limit);
-
       const [data, total] = await queryBuilder.getManyAndCount();
       const totalPages = Math.ceil(total / limit);
-
       return {
         data,
         meta: {
@@ -198,7 +192,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
       } = options;
 
       const queryBuilder = this.createQueryBuilder();
-
       // Apply relations
       relations.forEach((relation) => {
         queryBuilder.leftJoinAndSelect(
@@ -224,10 +217,8 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
       // Apply pagination
       const offset = (page - 1) * limit;
       queryBuilder.skip(offset).take(limit);
-
       const [data, total] = await queryBuilder.getManyAndCount();
       const totalPages = Math.ceil(total / limit);
-
       return {
         data,
         meta: {
@@ -277,7 +268,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async softDeleteById(id: string | number): Promise<void> {
     try {
       const result = await this.repository.softDelete(id);
-
       if (result.affected === 0) {
         throw new NotFoundException(
           `${this.entityName} with ID ${id} not found`,
@@ -297,7 +287,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async deleteById(id: string | number): Promise<void> {
     try {
       const result = await this.repository.delete(id);
-
       if (result.affected === 0) {
         throw new NotFoundException(
           `${this.entityName} with ID ${id} not found`,
@@ -317,7 +306,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
   async restoreById(id: string | number): Promise<void> {
     try {
       const result = await this.repository.restore(id);
-
       if (result.affected === 0) {
         throw new NotFoundException(
           `${this.entityName} with ID ${id} not found`,
@@ -336,9 +324,8 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
    */
   async count(queryOptions?: QueryOptions<T>): Promise<number> {
     try {
-      const queryBuilder = this.createQueryBuilder();
+      const queryBuilder = this.createQueryBuilder('entity');
       this.applyQueryOptions(queryBuilder, queryOptions);
-
       return await queryBuilder.getCount();
     } catch (error) {
       this.handleError(error, 'count');
@@ -385,23 +372,18 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     queryOptions?: QueryOptions<T>,
   ): void {
     if (!queryOptions) return;
-
     const alias = queryBuilder.alias;
-
     // Apply relations
     if (queryOptions.relations?.length) {
       const appliedRelations = new Set<string>();
-
       queryOptions.relations.forEach((relation) => {
         // Handle nested relations like 'options.values'
         if (relation.includes('.')) {
           const parts = relation.split('.');
           let currentAlias = alias;
-
           for (let i = 0; i < parts.length; i++) {
             const relationKey = `${currentAlias}.${parts[i]}`;
             const relationAlias = parts[i];
-
             if (!appliedRelations.has(relationKey)) {
               queryBuilder.leftJoinAndSelect(relationKey, relationAlias);
               appliedRelations.add(relationKey);
@@ -460,7 +442,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     filters.forEach((filter, index) => {
       const paramName = `filter_${index}`;
       const fieldName = `${alias}.${filter.field}`;
-
       switch (filter.operator) {
         case 'eq':
           queryBuilder.andWhere(`${fieldName} = :${paramName}`, {
@@ -546,7 +527,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
     alias: string,
   ): void {
     if (!search.query || !search.fields?.length) return;
-
     const searchConditions = search.fields.map((field, index) => {
       const paramName = `search_${index}`;
       const fieldName = `${alias}.${field}`;
@@ -556,7 +536,6 @@ export abstract class BaseRepository<T> implements IBaseRepository<T> {
 
     const operator = search.operator === 'AND' ? ' AND ' : ' OR ';
     const whereClause = `(${searchConditions.join(operator)})`;
-
     queryBuilder.andWhere(whereClause);
   }
 

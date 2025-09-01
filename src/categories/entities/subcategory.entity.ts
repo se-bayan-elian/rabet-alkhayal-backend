@@ -29,6 +29,46 @@ export class Subcategory {
   name: string;
 
   @ApiProperty({
+    description: 'Subcategory description',
+    example: 'Mobile phones and smartphones',
+    required: false,
+  })
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
+  @ApiProperty({
+    description: 'Subcategory image URL',
+    example: 'https://cdn.example.com/subcategory.jpg',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Subcategory image Cloudinary public ID',
+    example: 'subcategories/image/123',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  imagePublicId?: string;
+
+  @ApiProperty({
+    description: 'Subcategory icon URL',
+    example: 'https://cdn.example.com/icon.png',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  iconUrl?: string;
+
+  @ApiProperty({
+    description: 'Subcategory icon Cloudinary public ID',
+    example: 'subcategories/icon/123',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  iconPublicId?: string;
+
+  @ApiProperty({
     description: 'Category ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })

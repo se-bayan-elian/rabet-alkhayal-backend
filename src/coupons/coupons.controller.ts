@@ -25,12 +25,12 @@ import { Coupon } from './entities/coupon.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '../common/helpers/enums';
+import { Role } from 'src/common/helpers/enums';
 
 @ApiTags('Coupons')
 @Controller('coupons')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.Admin)
+@Roles(Role.SuperAdmin)
 @ApiBearerAuth()
 export class CouponsController {
   constructor(private readonly couponsService: CouponsService) {}
@@ -43,8 +43,12 @@ export class CouponsController {
     type: Coupon,
   })
   @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Invalid coupon data or coupon code already exists',
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions - Admin role required',
   })
   create(@Body() createCouponDto: CreateCouponDto): Promise<Coupon> {
     return this.couponsService.create(createCouponDto);
@@ -56,6 +60,14 @@ export class CouponsController {
     status: HttpStatus.OK,
     description: 'Coupons retrieved successfully',
     type: [Coupon],
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions - Admin role required',
   })
   @ApiQuery({
     name: 'isActive',
@@ -95,6 +107,14 @@ export class CouponsController {
     status: HttpStatus.NOT_FOUND,
     description: 'Coupon not found',
   })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions - Admin role required',
+  })
   findOne(@Param('id') id: string): Promise<Coupon> {
     return this.couponsService.findOne(id);
   }
@@ -110,6 +130,14 @@ export class CouponsController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Coupon not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions - Admin role required',
   })
   findByCode(@Param('code') code: string): Promise<Coupon> {
     return this.couponsService.findByCode(code);
@@ -131,6 +159,14 @@ export class CouponsController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid coupon data',
   })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions - Admin role required',
+  })
   update(
     @Param('id') id: string,
     @Body() updateCouponDto: UpdateCouponDto,
@@ -148,6 +184,14 @@ export class CouponsController {
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Coupon not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions - Admin role required',
   })
   remove(@Param('id') id: string): Promise<void> {
     return this.couponsService.remove(id);
@@ -169,6 +213,18 @@ export class CouponsController {
         averageOrderValue: { type: 'number', example: 120.5 },
       },
     },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Coupon not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing authentication token',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Insufficient permissions - Admin role required',
   })
   getStats(@Param('id') id: string) {
     return this.couponsService.getCouponStats(id);

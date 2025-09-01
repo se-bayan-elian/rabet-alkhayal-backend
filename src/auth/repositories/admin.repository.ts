@@ -26,4 +26,78 @@ export class AdminRepository extends BaseRepository<Admin> {
     await this.adminRepository.update(id, admin);
     return this.adminRepository.findOne({ where: { id } });
   }
+
+  async findAllAdmins(filters?: {
+    search?: string;
+    isActive?: boolean;
+    role?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryBuilder = this.adminRepository.createQueryBuilder('admin');
+
+    // Apply search filter
+    if (filters?.search) {
+      queryBuilder.andWhere(
+        '(admin.name ILIKE :search OR admin.email ILIKE :search)',
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    // Apply active status filter
+    if (filters?.isActive !== undefined) {
+      queryBuilder.andWhere('admin.isActive = :isActive', {
+        isActive: filters.isActive,
+      });
+    }
+
+    // Apply role filter
+    if (filters?.role) {
+      queryBuilder.andWhere('admin.role = :role', { role: filters.role });
+    }
+
+    // Pagination
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 10;
+    const offset = (page - 1) * limit;
+
+    queryBuilder.orderBy('admin.createdAt', 'DESC').skip(offset).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Get admin statistics
+   */
+  async getAdminStats() {
+    const [totalAdmins, activeAdmins, inactiveAdmins, verifiedAdmins] =
+      await Promise.all([
+        this.count(),
+        this.count({
+          filters: [{ field: 'isActive', operator: 'eq', value: true }],
+        }),
+        this.count({
+          filters: [{ field: 'isActive', operator: 'eq', value: false }],
+        }),
+        this.count({
+          filters: [{ field: 'isVerified', operator: 'eq', value: true }],
+        }),
+      ]);
+
+    return {
+      totalAdmins,
+      activeAdmins,
+      inactiveAdmins,
+      verifiedAdmins,
+      unverifiedAdmins: totalAdmins - verifiedAdmins,
+    };
+  }
 }

@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';
 import { BaseRepository } from '../../common/repository/base.repository';
 import { QueryOptions } from '../../common/repository/interfaces/query-options.interface';
+import { UserRole } from '../dto/create-user.dto';
 
 @Injectable()
 export class UsersRepository extends BaseRepository<User> {
@@ -122,7 +123,7 @@ export class UsersRepository extends BaseRepository<User> {
           filters: [{ field: 'isActive', operator: 'eq', value: false }],
         }),
         this.count({
-          filters: [{ field: 'isEmailVerified', operator: 'eq', value: true }],
+          filters: [{ field: 'isVerified', operator: 'eq', value: true }],
         }),
       ]);
 
@@ -132,6 +133,64 @@ export class UsersRepository extends BaseRepository<User> {
       inactiveUsers,
       verifiedUsers,
       unverifiedUsers: totalUsers - verifiedUsers,
+    };
+  }
+
+  /**
+   * Find users for admin with advanced filters
+   */
+  async findUsersForAdmin(filters: {
+    search?: string;
+    isActive?: boolean;
+    isVerified?: boolean;
+    role?: UserRole;
+    page?: number;
+    limit?: number;
+  }) {
+    const queryBuilder = this.createQueryBuilder('user');
+
+    // Apply search filter
+    if (filters.search) {
+      queryBuilder.andWhere(
+        '(user.firstName ILIKE :search OR user.lastName ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    // Apply active status filter
+    if (filters.isActive !== undefined) {
+      queryBuilder.andWhere('user.isActive = :isActive', {
+        isActive: filters.isActive,
+      });
+    }
+
+    // Apply verified status filter
+    if (filters.isVerified !== undefined) {
+      queryBuilder.andWhere('user.isVerified = :isVerified', {
+        isVerified: filters.isVerified,
+      });
+    }
+
+    // Apply role filter
+    if (filters.role) {
+      queryBuilder.andWhere('user.role = :role', { role: filters.role });
+    }
+
+    // Pagination
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const offset = (page - 1) * limit;
+
+    queryBuilder.orderBy('user.createdAt', 'DESC').skip(offset).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 }

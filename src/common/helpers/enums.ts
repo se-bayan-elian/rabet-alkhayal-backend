@@ -14,6 +14,7 @@ export enum OptionType {
   TEXT = 'text',
   NOTE = 'note',
   CHECKBOX = 'checkbox',
+  IMAGE = 'image',
 }
 
 export enum PaymentMethod {

@@ -6,30 +6,86 @@
 
 Response:
 
-```json
+````json
 {
   "data": [
     {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "Web Development",
-      "description": "Complete web development solutions including frontend and backend",
-      "icon": "https://example.com/icons/web-dev.png",
-      "image": "https://example.com/images/web-development.jpg",
-      "projects": [],
-      "features": [],
-      "pricingPlans": [],
-      "createdAt": "2025-08-24T09:25:31.833Z",
-      "updatedAt": "2025-08-24T09:25:31.833Z"
+      "id": ## Breaking Changes from Previous Version
+
+1. Translation objects removed:
+   - Previously: `{ "en": "Text", "ar": "Ø§Ù„Ù†Øµ" }`
+   - Now: `"Text"` (direct string)
+2. No need to send language headers
+3. No locale query parameters needed
+4. Same API endpoints, simpler request/response format
+
+---
+
+## Products API - Questions-Based System
+
+**📋 Complete documentation available in: [PRODUCTS_API_EXAMPLES.md](../PRODUCTS_API_EXAMPLES.md)**
+
+The Products API has been refactored to use a **questions-based system** instead of the old options-based system. This provides more flexibility for product customization.
+
+### Key Changes from Options to Questions
+
+- **Old System**: Products had "options" with "values"
+- **New System**: Products have "questions" with "answers"
+
+### Supported Question Types
+
+1. **SELECT**: Multiple choice questions with predefined answers
+2. **TEXT**: Free text input from customers
+3. **IMAGE**: Customer image uploads
+4. **CHECKBOX**: Multiple selection options
+5. **NOTE**: Multi-line text input
+
+### Quick Create Example
+
+```json
+POST /products
+{
+  "name": "Custom T-Shirt",
+  "originalPrice": 29.99,
+  "discountedPrice": 24.99,
+  "imageUrl": "https://cdn.example.com/tshirt.jpg",
+  "imagePublicId": "products/tshirt-123",
+  "isFeatured": false,
+  "questions": [
+    {
+      "questionText": "What size?",
+      "type": "SELECT",
+      "required": true,
+      "answers": [
+        {"answerText": "Small", "extraPrice": 0},
+        {"answerText": "Large", "extraPrice": 2.00}
+      ]
     }
-  ],
-  "meta": {
-    "page": 1,
-    "limit": 10,
-    "totalItems": 1,
-    "totalPages": 1
-  }
+  ]
 }
-```
+````
+
+For comprehensive examples including all question types, cart integration, and error handling, see **[PRODUCTS_API_EXAMPLES.md](../PRODUCTS_API_EXAMPLES.md)**.0-e29b-41d4-a716-446655440000",
+"name": "Web Development",
+"description": "Complete web development solutions including frontend and backend",
+"icon": "https://example.com/icons/web-dev.png",
+"image": "https://example.com/images/web-development.jpg",
+"projects": [],
+"features": [],
+"pricingPlans": [],
+"createdAt": "2025-08-24T09:25:31.833Z",
+"updatedAt": "2025-08-24T09:25:31.833Z"
+}
+],
+"meta": {
+"page": 1,
+"limit": 10,
+"totalItems": 1,
+"totalPages": 1
+}
+}
+
+````
 
 ## Create Service
 
@@ -45,7 +101,7 @@ Content-Type: application/json
   "isActive": true,
   "displayOrder": 1
 }
-```
+````
 
 ## Create Project
 

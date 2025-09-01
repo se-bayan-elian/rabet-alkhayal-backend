@@ -10,6 +10,7 @@ import {
   Query,
   HttpStatus,
   Put,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -28,21 +29,47 @@ import { User } from './entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { QueryOptionsDto } from '../common/repository/dto/query-options.dto';
 import { PaginatedResponseDto } from '../common/repository/dto/paginated-response.dto';
+import { AdminUserFilterDto } from './dto/admin-user-filter.dto';
+import { AdminUserActionDto } from './dto/admin-user-action.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('Authorization') // Must match the name in DocumentBuilder
-@Roles(Role.Admin)
+@Roles(Role.SuperAdmin)
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new user' })
+  @ApiOperation({ summary: 'Create a new user or admin' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'User created successfully',
-    type: User,
+    description: 'User/Admin created successfully',
+    schema: {
+      oneOf: [
+        { $ref: '#/components/schemas/User' },
+        {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            admin: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                email: { type: 'string' },
+                role: { type: 'string' },
+              },
+            },
+            role: { type: 'string' },
+          },
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid input data or user already exists',
   })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.createUser(createUserDto);
@@ -125,10 +152,10 @@ export class UsersController {
   }
 
   @Get('stats')
-  @ApiOperation({ summary: 'Get user statistics' })
+  @ApiOperation({ summary: 'Get user and admin statistics' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'User statistics retrieved successfully',
+    description: 'User and admin statistics retrieved successfully',
   })
   getUserStats() {
     return this.usersService.getUserStats();
@@ -175,7 +202,7 @@ export class UsersController {
     description: 'User not found',
   })
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.updateUser(+id, updateUserDto);
+    return this.usersService.updateUser(id, updateUserDto);
   }
 
   @Delete(':id')
@@ -204,5 +231,149 @@ export class UsersController {
   })
   restore(@Param('id') id: string) {
     return this.usersService.restore(id);
+  }
+
+  // Admin endpoints
+  @Get('admin/all')
+  @ApiOperation({
+    summary: 'Get all users and admins for admin with advanced filters',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Users and admins retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            oneOf: [
+              { $ref: '#/components/schemas/User' },
+              { $ref: '#/components/schemas/Admin' },
+            ],
+          },
+        },
+        total: { type: 'number' },
+        page: { type: 'number' },
+        limit: { type: 'number' },
+        totalPages: { type: 'number' },
+      },
+    },
+  })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+  @ApiQuery({ name: 'isVerified', required: false, type: Boolean })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    enum: ['customer', 'admin', 'super_admin', 'manager'],
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  getUsersForAdmin(@Query() filters: AdminUserFilterDto) {
+    return this.usersService.getUsersForAdmin(filters);
+  }
+
+  @Get('admin/all-users-and-admins')
+  @ApiOperation({
+    summary: 'Get all users and admins for admin with advanced filters',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Users and admins retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: {
+            oneOf: [
+              { $ref: '#/components/schemas/User' },
+              { $ref: '#/components/schemas/Admin' },
+            ],
+          },
+        },
+        total: { type: 'number' },
+        page: { type: 'number' },
+        limit: { type: 'number' },
+        totalPages: { type: 'number' },
+      },
+    },
+  })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'isActive', required: false, type: Boolean })
+  @ApiQuery({ name: 'isVerified', required: false, type: Boolean })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    enum: ['customer', 'admin', 'super_admin', 'manager'],
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  getAllUsersAndAdmins(@Query() filters: AdminUserFilterDto) {
+    return this.usersService.getAllUsersAndAdmins(filters);
+  }
+
+  @Put(':id/verify')
+  @ApiOperation({ summary: 'Set user verification status (admin only)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User verification status updated successfully',
+    type: User,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
+  setUserVerified(
+    @Param('id') id: string,
+    @Body() actionDto: AdminUserActionDto,
+  ) {
+    if (actionDto.isVerified === undefined) {
+      throw new BadRequestException('isVerified field is required');
+    }
+    return this.usersService.setUserVerificationStatus(
+      id,
+      actionDto.isVerified,
+    );
+  }
+
+  @Put(':id/status')
+  @ApiOperation({ summary: 'Set user active/inactive status (admin only)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User status updated successfully',
+    type: User,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
+  setUserStatus(
+    @Param('id') id: string,
+    @Body() actionDto: AdminUserActionDto,
+  ) {
+    if (actionDto.isActive === undefined) {
+      throw new BadRequestException('isActive field is required');
+    }
+    return this.usersService.setUserActiveStatus(id, actionDto.isActive);
+  }
+
+  @Post(':id/resend-verification')
+  @ApiOperation({ summary: 'Resend verification code to user (admin only)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Verification code sent successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'User is already verified',
+  })
+  resendVerificationCode(@Param('id') id: string) {
+    return this.usersService.resendVerificationCode(id);
   }
 }

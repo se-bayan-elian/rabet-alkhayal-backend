@@ -8,7 +8,6 @@ import {
   Delete,
   Query,
   HttpStatus,
-  Put,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -114,7 +113,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete category by ID (soft delete)' })
+  @ApiOperation({ summary: 'Delete category by ID' })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'Category deleted successfully',
@@ -125,16 +124,6 @@ export class CategoriesController {
   })
   remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
-  }
-
-  @Put(':id/restore')
-  @ApiOperation({ summary: 'Restore soft deleted category' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Category restored successfully',
-  })
-  restore(@Param('id') id: string) {
-    return this.categoriesService.restore(id);
   }
 
   // Subcategory endpoints
@@ -148,9 +137,18 @@ export class CategoriesController {
   @ApiParam({ name: 'categoryId', description: 'Category ID' })
   createSubcategory(
     @Param('categoryId') categoryId: string,
-    @Body('name') name: string,
+    @Body() body: any,
   ) {
-    return this.categoriesService.createSubcategory(categoryId, name);
+    // Accept all possible fields for subcategory
+    return this.categoriesService.createSubcategory(
+      categoryId,
+      body.name,
+      body.description,
+      body.imageUrl,
+      body.imagePublicId,
+      body.iconUrl,
+      body.iconPublicId,
+    );
   }
 
   @Get(':categoryId/subcategories')
@@ -193,13 +191,22 @@ export class CategoriesController {
   @ApiParam({ name: 'subcategoryId', description: 'Subcategory ID' })
   updateSubcategory(
     @Param('subcategoryId') subcategoryId: string,
-    @Body('name') name: string,
+    @Body() body: any,
   ) {
-    return this.categoriesService.updateSubcategory(subcategoryId, name);
+    // Accept all possible fields for subcategory update
+    return this.categoriesService.updateSubcategory(
+      subcategoryId,
+      body.name,
+      body.description,
+      body.imageUrl,
+      body.imagePublicId,
+      body.iconUrl,
+      body.iconPublicId,
+    );
   }
 
   @Delete('subcategories/:subcategoryId')
-  @ApiOperation({ summary: 'Delete subcategory by ID (soft delete)' })
+  @ApiOperation({ summary: 'Delete subcategory by ID' })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
     description: 'Subcategory deleted successfully',

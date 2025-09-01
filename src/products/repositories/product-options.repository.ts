@@ -41,35 +41,40 @@ export class ProductOptionsRepository extends BaseRepository<Product> {
         discountedPrice: productData.discountedPrice,
         weight: productData.weight,
         subcategoryId: productData.subcategoryId,
+        imageUrl: productData.imageUrl,
+        imagePublicId: productData.imagePublicId,
+        isFeatured: productData.isFeatured || false,
       });
 
       const savedProduct = await queryRunner.manager.save(Product, product);
 
-      // Create product options and their values
-      if (productData.options && productData.options.length > 0) {
-        for (const optionData of productData.options) {
-          const option = this.productOptionRepository.create({
+      // Create product questions and their answers
+      if (productData.questions && productData.questions.length > 0) {
+        for (const questionData of productData.questions) {
+          const question = this.productOptionRepository.create({
             productId: savedProduct.id,
-            name: optionData.name,
-            type: optionData.type,
-            required: optionData.required,
+            questionText: questionData.questionText,
+            type: questionData.type,
+            required: questionData.required,
           });
 
-          const savedOption = await queryRunner.manager.save(
+          const savedQuestion = await queryRunner.manager.save(
             ProductOption,
-            option,
+            question,
           );
 
-          // Create option values
-          if (optionData.values && optionData.values.length > 0) {
-            for (const valueData of optionData.values) {
-              const optionValue = this.productOptionValueRepository.create({
-                optionId: savedOption.id,
-                value: valueData.value,
-                extraPrice: valueData.extraPrice || 0,
+          // Create question answers
+          if (questionData.answers && questionData.answers.length > 0) {
+            for (const answerData of questionData.answers) {
+              const answer = this.productOptionValueRepository.create({
+                optionId: savedQuestion.id,
+                answerText: answerData.answerText,
+                imageUrl: answerData.imageUrl,
+                imagePublicId: answerData.imagePublicId,
+                extraPrice: answerData.extraPrice || 0,
               });
 
-              await queryRunner.manager.save(ProductOptionValue, optionValue);
+              await queryRunner.manager.save(ProductOptionValue, answer);
             }
           }
         }
@@ -80,7 +85,7 @@ export class ProductOptionsRepository extends BaseRepository<Product> {
       // Return product with relations
       return this.findOne({
         where: { id: savedProduct.id },
-        relations: ['subcategory', 'options', 'options.values'],
+        relations: ['subcategory', 'questions', 'questions.answers'],
       });
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -103,7 +108,7 @@ export class ProductOptionsRepository extends BaseRepository<Product> {
         ...(queryOptions?.filters || []),
         { field: 'subcategoryId', operator: 'eq', value: subcategoryId },
       ],
-      relations: ['subcategory', 'options', 'options.values'],
+      relations: ['subcategory', 'questions', 'questions.answers'],
     };
 
     return this.findManyWithPagination(options);
@@ -123,7 +128,7 @@ export class ProductOptionsRepository extends BaseRepository<Product> {
         fields: ['name'],
         operator: 'OR',
       },
-      relations: ['subcategory', 'options', 'options.values'],
+      relations: ['subcategory', 'questions', 'questions.answers'],
     };
 
     return this.findManyWithPagination(options);
@@ -147,7 +152,7 @@ export class ProductOptionsRepository extends BaseRepository<Product> {
           values: [minPrice, maxPrice],
         },
       ],
-      relations: ['subcategory', 'options', 'options.values'],
+      relations: ['subcategory', 'questions', 'questions.answers'],
     };
 
     return this.findManyWithPagination(options);
@@ -188,35 +193,37 @@ export class ProductOptionsRepository extends BaseRepository<Product> {
         });
       }
 
-      // Handle options update if provided
-      if (updateData.options) {
-        // Remove existing options and values
+      // Handle questions update if provided
+      if (updateData.questions) {
+        // Remove existing questions and answers
         await queryRunner.manager.delete(ProductOption, { productId: id });
 
-        // Create new options
-        for (const optionData of updateData.options) {
-          const option = this.productOptionRepository.create({
+        // Create new questions
+        for (const questionData of updateData.questions) {
+          const question = this.productOptionRepository.create({
             productId: id,
-            name: optionData.name,
-            type: optionData.type,
-            required: optionData.required,
+            questionText: questionData.questionText,
+            type: questionData.type,
+            required: questionData.required,
           });
 
-          const savedOption = await queryRunner.manager.save(
+          const savedQuestion = await queryRunner.manager.save(
             ProductOption,
-            option,
+            question,
           );
 
-          // Create option values
-          if (optionData.values && optionData.values.length > 0) {
-            for (const valueData of optionData.values) {
-              const optionValue = this.productOptionValueRepository.create({
-                optionId: savedOption.id,
-                value: valueData.value,
-                extraPrice: valueData.extraPrice || 0,
+          // Create question answers
+          if (questionData.answers && questionData.answers.length > 0) {
+            for (const answerData of questionData.answers) {
+              const answer = this.productOptionValueRepository.create({
+                optionId: savedQuestion.id,
+                answerText: answerData.answerText,
+                imageUrl: answerData.imageUrl,
+                imagePublicId: answerData.imagePublicId,
+                extraPrice: answerData.extraPrice || 0,
               });
 
-              await queryRunner.manager.save(ProductOptionValue, optionValue);
+              await queryRunner.manager.save(ProductOptionValue, answer);
             }
           }
         }
@@ -227,7 +234,7 @@ export class ProductOptionsRepository extends BaseRepository<Product> {
       // Return updated product with relations
       return this.findOne({
         where: { id },
-        relations: ['subcategory', 'options', 'options.values'],
+        relations: ['subcategory', 'questions', 'questions.answers'],
       });
     } catch (error) {
       await queryRunner.rollbackTransaction();

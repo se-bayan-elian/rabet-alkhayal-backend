@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
-  IsUUID,
   IsOptional,
   IsArray,
   ValidateNested,
@@ -17,6 +16,51 @@ export class CreateSubcategoryDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiProperty({
+    description: 'Subcategory description',
+    example: 'Mobile phones and smartphones',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Subcategory image URL',
+    example: 'https://cdn.example.com/subcategory.jpg',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Subcategory image Cloudinary public ID',
+    example: 'subcategories/image/123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
+
+  @ApiProperty({
+    description: 'Subcategory icon URL',
+    example: 'https://cdn.example.com/icon.png',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  iconUrl?: string;
+
+  @ApiProperty({
+    description: 'Subcategory icon Cloudinary public ID',
+    example: 'subcategories/icon/123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  iconPublicId?: string;
 }
 
 export class CreateCategoryDto {
@@ -27,6 +71,51 @@ export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty()
   name: string;
+
+  @ApiProperty({
+    description: 'Category description',
+    example: 'Electronic devices and accessories',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({
+    description: 'Category image URL',
+    example: 'https://cdn.example.com/category.jpg',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @ApiProperty({
+    description: 'Category image Cloudinary public ID',
+    example: 'categories/image/123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  imagePublicId?: string;
+
+  @ApiProperty({
+    description: 'Category icon URL',
+    example: 'https://cdn.example.com/icon.png',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  iconUrl?: string;
+
+  @ApiProperty({
+    description: 'Category icon Cloudinary public ID',
+    example: 'categories/icon/123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  iconPublicId?: string;
 
   @ApiProperty({
     description: 'Subcategories to create with this category',
