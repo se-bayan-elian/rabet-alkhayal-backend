@@ -181,6 +181,22 @@ export class CategoriesController {
     return this.categoriesService.getSubcategoriesWithStats(categoryId);
   }
 
+  @Get('subcategories/:subcategoryId')
+  @ApiOperation({ summary: 'Get subcategory by ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Subcategory retrieved successfully',
+    type: Subcategory,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Subcategory not found',
+  })
+  @ApiParam({ name: 'subcategoryId', description: 'Subcategory ID' })
+  getSubcategoryById(@Param('subcategoryId') subcategoryId: string) {
+    return this.categoriesService.getSubcategoryById(subcategoryId);
+  }
+
   @Patch('subcategories/:subcategoryId')
   @ApiOperation({ summary: 'Update subcategory by ID' })
   @ApiResponse({

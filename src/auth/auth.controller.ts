@@ -7,6 +7,7 @@ import {
   Res,
   UseGuards,
   HttpStatus,
+  Patch,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminLoginDto } from './dto/admin-login.dto';
@@ -15,6 +16,7 @@ import { CreateAdminDto } from './dto/create-admin.dto';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { JwtAuthGuard } from './guards/jwt.guard';
 import { PinoLogger } from 'nestjs-pino';
 import { AuthGuard } from '@nestjs/passport';
 import { GoogleOAuthService } from './googleoAuthService';
@@ -22,6 +24,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { User } from 'src/users/entities/user.entity';
 import { SignInVerificationDto } from './dtos/sign-in.dto';
 import { SignUpDto } from './dtos/sign-up.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 @Controller({
   path: 'auth',
   version: '1',
@@ -151,5 +154,32 @@ export class AuthController {
       this.authService.generateRefreshToken(user.id),
     ]);
     return { accessToken, refreshToken };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User profile retrieved successfully',
+    type: User,
+  })
+  getProfile(@CurrentUser() user: User) {
+    return this.authService.getProfile(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User profile updated successfully',
+    type: User,
+  })
+  updateProfile(
+    @CurrentUser() user: User,
+    @Body() updateData: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(user.id, updateData);
   }
 }

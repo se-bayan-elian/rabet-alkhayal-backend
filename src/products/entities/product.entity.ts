@@ -31,6 +31,14 @@ export class Product {
   name: string;
 
   @ApiProperty({
+    description: 'Product description',
+    example: 'Latest iPhone with advanced camera system and A17 Pro chip',
+    required: false,
+  })
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
+  @ApiProperty({
     description: 'Original price',
     example: 999.99,
   })
@@ -118,6 +126,27 @@ export class Product {
   })
   @OneToMany(() => Review, (review) => review.product)
   reviews: Review[];
+
+  @ApiProperty({
+    description: 'Average review rating',
+    example: 4.5,
+    required: false,
+  })
+  @Column({
+    type: 'decimal',
+    precision: 3,
+    scale: 2,
+    nullable: true,
+    name: 'average_rating',
+  })
+  averageRating?: number;
+
+  @ApiProperty({
+    description: 'Total number of reviews',
+    example: 25,
+  })
+  @Column({ type: 'int', default: 0, name: 'review_count' })
+  reviewCount: number;
 
   @ApiProperty({
     description: 'Creation date',

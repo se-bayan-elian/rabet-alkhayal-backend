@@ -230,6 +230,20 @@ export class CategoriesService {
     );
   }
 
+  async getSubcategoryById(subcategoryId: string): Promise<Subcategory> {
+    this.logger.info(`Fetching subcategory with ID: ${subcategoryId}`);
+
+    const subcategory =
+      await this.subcategoriesRepository.findById(subcategoryId);
+    if (!subcategory) {
+      throw new NotFoundException(
+        `Subcategory with ID '${subcategoryId}' not found`,
+      );
+    }
+
+    return subcategory;
+  }
+
   async updateSubcategory(
     id: string,
     name: string,

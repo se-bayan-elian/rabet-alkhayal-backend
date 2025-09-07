@@ -184,6 +184,29 @@ export class ServicesController {
     return { statusCode: HttpStatus.NO_CONTENT };
   }
 
+  @Get('featured')
+  @ApiOperation({
+    summary: 'Get featured services',
+    description: 'Get a list of featured services for homepage display.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns list of featured services',
+    type: [Service],
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of featured services to return (default: 6, max: 8)',
+  })
+  getFeaturedServices(@Query('limit') limit?: number) {
+    const maxLimit = Math.min(limit || 6, 8);
+    return this.servicesService.findAllServices({
+      limit: maxLimit,
+    });
+  }
+
   @Get()
   @ApiOperation({
     summary: 'Get all services',

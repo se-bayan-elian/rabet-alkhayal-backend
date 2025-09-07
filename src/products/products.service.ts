@@ -116,7 +116,7 @@ export class ProductsService {
       // Get products marked as featured
       return this.productsRepository.findMany({
         filters: [{ field: 'isFeatured', operator: 'eq', value: true }],
-        relations: ['subcategory', 'options', 'options.values'],
+        relations: ['subcategory', 'questions', 'questions.answers'],
         pagination: { page: 1, limit: limit },
         sort: [{ field: 'createdAt', direction: 'DESC' }],
       });
@@ -125,5 +125,42 @@ export class ProductsService {
       // Query products by sales count from completed orders
       return this.productsRepository.findMostSoldProducts(limit);
     }
+  }
+
+  async getRelatedProducts(
+    productId: string,
+    limit: number = 6,
+  ): Promise<Product[]> {
+    this.logger.info(
+      `Fetching related products for product ID: ${productId}, limit: ${limit}`,
+    );
+
+    // First, get the current product to know its subcategory
+    const currentProduct = await this.productsRepository.findOne({
+      where: { id: productId },
+      relations: ['subcategory'],
+    });
+
+    if (!currentProduct) {
+      throw new Error(`Product with ID '${productId}' not found`);
+    }
+
+    // Get products from the same subcategory, excluding the current product
+    return this.productsRepository.findMany({
+      filters: [
+        {
+          field: 'subcategoryId',
+          operator: 'eq',
+          value: currentProduct.subcategoryId,
+        },
+        { field: 'id', operator: 'ne', value: productId }, // Exclude current product
+      ],
+      relations: ['subcategory', 'questions', 'questions.answers'],
+      pagination: { page: 1, limit: limit },
+      sort: [
+        { field: 'isFeatured', direction: 'DESC' }, // Prioritize featured products
+        { field: 'createdAt', direction: 'DESC' },
+      ],
+    });
   }
 }

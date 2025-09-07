@@ -10,8 +10,6 @@ import { Role } from 'src/common/helpers/enums';
 
 @ApiTags('Settings')
 @Controller('settings')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.SuperAdmin)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
@@ -25,7 +23,8 @@ export class SettingsController {
   async getSocialLinks(): Promise<UpdateSocialLinksDto> {
     return this.settingsService.getSocialLinks();
   }
-
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
   @Put('social')
   @ApiOperation({ summary: 'Update social media links' })
   @ApiResponse({
@@ -48,7 +47,8 @@ export class SettingsController {
   async getDeliveryCosts(): Promise<UpdateDeliveryCostsDto> {
     return this.settingsService.getDeliveryCosts();
   }
-
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
   @Put('delivery')
   @ApiOperation({ summary: 'Update delivery costs' })
   @ApiResponse({

@@ -101,6 +101,14 @@ export class CreateProductDto {
   name: string;
 
   @ApiProperty({
+    description: 'Product description',
+    example: 'iPhone 15 Pro description ( html )',
+  })
+  @IsString()
+  @IsOptional()
+  description: string;
+
+  @ApiProperty({
     description: 'Original price',
     example: 999.99,
   })

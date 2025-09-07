@@ -308,4 +308,22 @@ export class AuthService {
     this.logger.info('Fetching admin statistics');
     return this.adminRepository.getAdminStats();
   }
+
+  async getProfile(userId: string): Promise<User> {
+    this.logger.info(`Fetching profile for user: ${userId}`);
+    const user = await this.userService.getUser(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async updateProfile(userId: string, updateData: any): Promise<User> {
+    this.logger.info(`Updating profile for user: ${userId}`);
+    const user = await this.userService.getUser(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return this.userService.updateUser(userId, updateData);
+  }
 }

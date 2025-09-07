@@ -21,7 +21,6 @@ import {
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { Product } from './entities/product.entity';
-import { QueryOptionsDto } from '../common/repository/dto/query-options.dto';
 import { PaginatedResponseDto } from '../common/repository/dto/paginated-response.dto';
 import { transformQueryParams } from '../common/repository/utils/query-transform.util';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
@@ -126,8 +125,9 @@ export class ProductsController {
   })
   findBySubcategory(
     @Param('subcategoryId', ParseUUIDPipe) subcategoryId: string,
-    @Query() queryOptionsDto: QueryOptionsDto,
+    @Query() query: any,
   ) {
+    const queryOptionsDto = transformQueryParams(query);
     return this.productsService.findBySubcategory(
       subcategoryId,
       queryOptionsDto,
@@ -162,6 +162,28 @@ export class ProductsController {
   ) {
     const maxLimit = Math.min(limit, 8);
     return this.productsService.getFeaturedProducts(mode, maxLimit);
+  }
+
+  @Get(':id/related')
+  @ApiOperation({ summary: 'Get related products' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Related products retrieved successfully',
+    type: [Product],
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Maximum number of related products to return (max 8)',
+    example: 6,
+    type: Number,
+  })
+  getRelatedProducts(
+    @Param('id', ParseUUIDPipe) productId: string,
+    @Query('limit') limit: number = 6,
+  ) {
+    const maxLimit = Math.min(limit, 8);
+    return this.productsService.getRelatedProducts(productId, maxLimit);
   }
 
   @Get(':id')

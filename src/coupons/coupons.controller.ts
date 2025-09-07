@@ -29,13 +29,69 @@ import { Role } from 'src/common/helpers/enums';
 
 @ApiTags('Coupons')
 @Controller('coupons')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.SuperAdmin)
-@ApiBearerAuth()
 export class CouponsController {
   constructor(private readonly couponsService: CouponsService) {}
 
+  // PUBLIC ENDPOINTS
+  @Post('validate')
+  @ApiOperation({ summary: 'Validate a coupon code and calculate discount' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Coupon validated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        coupon: { $ref: '#/components/schemas/Coupon' },
+        discount: { type: 'number', example: 15.5 },
+        isValid: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Coupon applied successfully' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid coupon or does not meet requirements',
+    schema: {
+      type: 'object',
+      properties: {
+        isValid: { type: 'boolean', example: false },
+        message: {
+          type: 'string',
+          example: 'Coupon is not valid or has expired',
+        },
+      },
+    },
+  })
+  async validateCoupon(
+    @Body() body: { code: string; orderTotal: number; userId?: string },
+  ) {
+    try {
+      const { coupon, discount } = await this.couponsService.applyCoupon(
+        body.code,
+        body.orderTotal,
+        body.userId,
+      );
+
+      return {
+        coupon,
+        discount,
+        isValid: true,
+        message: 'Coupon applied successfully',
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        message: error.message || 'Invalid coupon code',
+        discount: 0,
+      };
+    }
+  }
+
+  // ADMIN ENDPOINTS
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new coupon (Admin only)' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -55,6 +111,9 @@ export class CouponsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all coupons (Admin only)' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -96,6 +155,9 @@ export class CouponsController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get coupon by ID (Admin only)' })
   @ApiParam({ name: 'id', description: 'Coupon ID' })
   @ApiResponse({
@@ -120,6 +182,9 @@ export class CouponsController {
   }
 
   @Get('code/:code')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get coupon by code (Admin only)' })
   @ApiParam({ name: 'code', description: 'Coupon code' })
   @ApiResponse({
@@ -144,6 +209,9 @@ export class CouponsController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update coupon (Admin only)' })
   @ApiParam({ name: 'id', description: 'Coupon ID' })
   @ApiResponse({
@@ -175,6 +243,9 @@ export class CouponsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete coupon (Admin only)' })
   @ApiParam({ name: 'id', description: 'Coupon ID' })
   @ApiResponse({
@@ -198,6 +269,9 @@ export class CouponsController {
   }
 
   @Get(':id/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SuperAdmin)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get coupon usage statistics (Admin only)' })
   @ApiParam({ name: 'id', description: 'Coupon ID' })
   @ApiResponse({

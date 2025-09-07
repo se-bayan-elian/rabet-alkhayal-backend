@@ -10,6 +10,7 @@ import { Review, ReviewStatus } from './entities/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { GetReviewsFilterDto } from './dto/get-reviews-filter.dto';
+import { GetProductReviewsDto } from './dto/get-product-reviews.dto';
 import { User } from '../users/entities/user.entity';
 import { Product } from '../products/entities/product.entity';
 
@@ -78,7 +79,12 @@ export class ReviewsService {
       status: ReviewStatus.PENDING, // Reviews start as pending for moderation
     });
 
-    return this.reviewRepository.save(review);
+    const savedReview = await this.reviewRepository.save(review);
+
+    // Update product review statistics
+    await this.updateProductReviewStats(createReviewDto.productId);
+
+    return savedReview;
   }
 
   async findByProduct(productId: string): Promise<Review[]> {
@@ -101,6 +107,112 @@ export class ReviewsService {
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findByProductWithFilters(
+    productId: string,
+    filters: GetProductReviewsDto,
+  ): Promise<
+    PaginatedResult<Review> & {
+      averageRating: number;
+      ratingDistribution: Record<string, number>;
+    }
+  > {
+    this.logger.info(
+      `Fetching reviews for product ${productId} with filters:`,
+      filters,
+    );
+
+    // Check if product exists
+    const product = await this.productRepository.findOne({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    const queryBuilder = this.reviewRepository
+      .createQueryBuilder('review')
+      .leftJoinAndSelect('review.user', 'user')
+      .where('review.productId = :productId', { productId })
+      .andWhere('review.status = :status', { status: ReviewStatus.APPROVED });
+
+    // Apply rating filter
+    if (filters.rating) {
+      queryBuilder.andWhere('review.rating = :rating', {
+        rating: filters.rating,
+      });
+    }
+
+    // Apply sorting
+    switch (filters.sort) {
+      case 'oldest':
+        queryBuilder.orderBy('review.createdAt', 'ASC');
+        break;
+      case 'highest':
+        queryBuilder
+          .orderBy('review.rating', 'DESC')
+          .addOrderBy('review.createdAt', 'DESC');
+        break;
+      case 'lowest':
+        queryBuilder
+          .orderBy('review.rating', 'ASC')
+          .addOrderBy('review.createdAt', 'DESC');
+        break;
+      case 'newest':
+      default:
+        queryBuilder.orderBy('review.createdAt', 'DESC');
+        break;
+    }
+
+    // Pagination
+    const page = filters.page || 1;
+    const limit = filters.limit || 10;
+    const offset = (page - 1) * limit;
+
+    queryBuilder.skip(offset).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    // Get average rating and rating distribution
+    const stats = await this.reviewRepository
+      .createQueryBuilder('review')
+      .select('AVG(review.rating)', 'averageRating')
+      .addSelect('review.rating', 'rating')
+      .addSelect('COUNT(review.id)', 'count')
+      .where('review.productId = :productId', { productId })
+      .andWhere('review.status = :status', { status: ReviewStatus.APPROVED })
+      .groupBy('review.rating')
+      .getRawMany();
+
+    const averageRating = parseFloat(
+      (
+        await this.reviewRepository
+          .createQueryBuilder('review')
+          .select('AVG(review.rating)', 'avg')
+          .where('review.productId = :productId', { productId })
+          .andWhere('review.status = :status', {
+            status: ReviewStatus.APPROVED,
+          })
+          .getRawOne()
+      ).avg || '0',
+    );
+
+    const ratingDistribution = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    stats.forEach((stat) => {
+      ratingDistribution[stat.rating] = parseInt(stat.count);
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      averageRating: parseFloat(averageRating.toFixed(2)),
+      ratingDistribution,
+    };
   }
 
   async findAllForAdmin(
@@ -204,17 +316,29 @@ export class ReviewsService {
     this.logger.info(`Updating review with ID: ${id}`);
 
     const review = await this.findOne(id);
+    const oldStatus = review.status;
 
     Object.assign(review, updateReviewDto);
-    return this.reviewRepository.save(review);
+    const updatedReview = await this.reviewRepository.save(review);
+
+    // Update product review statistics if status changed (affects approved count)
+    if (oldStatus !== updatedReview.status) {
+      await this.updateProductReviewStats(review.productId);
+    }
+
+    return updatedReview;
   }
 
   async remove(id: string): Promise<void> {
     this.logger.info(`Deleting review with ID: ${id}`);
 
     const review = await this.findOne(id);
+    const productId = review.productId;
 
     await this.reviewRepository.remove(review);
+
+    // Update product review statistics after deletion
+    await this.updateProductReviewStats(productId);
   }
 
   async toggleFeatured(id: string): Promise<Review> {
@@ -224,5 +348,34 @@ export class ReviewsService {
 
     review.isFeatured = !review.isFeatured;
     return this.reviewRepository.save(review);
+  }
+
+  /**
+   * Update product review statistics (average rating and review count)
+   */
+  private async updateProductReviewStats(productId: string): Promise<void> {
+    this.logger.info(`Updating review statistics for product ${productId}`);
+
+    const stats = await this.reviewRepository
+      .createQueryBuilder('review')
+      .select('AVG(review.rating)', 'averageRating')
+      .addSelect('COUNT(review.id)', 'reviewCount')
+      .where('review.productId = :productId', { productId })
+      .andWhere('review.status = :status', { status: ReviewStatus.APPROVED })
+      .getRawOne();
+
+    const averageRating = stats.averageRating
+      ? parseFloat(parseFloat(stats.averageRating).toFixed(2))
+      : null;
+    const reviewCount = parseInt(stats.reviewCount) || 0;
+
+    await this.productRepository.update(productId, {
+      averageRating,
+      reviewCount,
+    });
+
+    this.logger.info(
+      `Updated product ${productId} - Average: ${averageRating}, Count: ${reviewCount}`,
+    );
   }
 }

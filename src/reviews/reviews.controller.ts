@@ -24,6 +24,7 @@ import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { GetReviewsFilterDto } from './dto/get-reviews-filter.dto';
+import { GetProductReviewsDto } from './dto/get-product-reviews.dto';
 import { Review, ReviewStatus } from './entities/review.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -51,20 +52,56 @@ export class ReviewsController {
   }
 
   @Get('product/:productId')
-  @ApiOperation({ summary: 'Get all approved reviews for a product' })
+  @ApiOperation({
+    summary: 'Get approved reviews for a product with filters and pagination',
+  })
   @ApiParam({
     name: 'productId',
     description: 'Product ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
+  @ApiQuery({ name: 'rating', required: false, type: Number })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['newest', 'oldest', 'highest', 'lowest'],
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({
     status: 200,
     description: 'Reviews retrieved successfully',
-    type: [Review],
+    schema: {
+      type: 'object',
+      properties: {
+        data: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/Review' },
+        },
+        total: { type: 'number' },
+        page: { type: 'number' },
+        limit: { type: 'number' },
+        totalPages: { type: 'number' },
+        averageRating: { type: 'number' },
+        ratingDistribution: {
+          type: 'object',
+          properties: {
+            '1': { type: 'number' },
+            '2': { type: 'number' },
+            '3': { type: 'number' },
+            '4': { type: 'number' },
+            '5': { type: 'number' },
+          },
+        },
+      },
+    },
   })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  async findByProduct(@Param('productId') productId: string) {
-    return this.reviewsService.findByProduct(productId);
+  async findByProduct(
+    @Param('productId') productId: string,
+    @Query() filters: GetProductReviewsDto,
+  ) {
+    return this.reviewsService.findByProductWithFilters(productId, filters);
   }
 
   @Get('featured')
