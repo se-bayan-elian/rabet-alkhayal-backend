@@ -69,6 +69,22 @@ export class Subcategory {
   iconPublicId?: string;
 
   @ApiProperty({
+    description: 'Subcategory banner image URL',
+    example: 'https://cdn.example.com/banner.jpg',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  bannerImageUrl?: string;
+
+  @ApiProperty({
+    description: 'Subcategory banner image Cloudinary public ID',
+    example: 'subcategories/banner/123',
+    required: false,
+  })
+  @Column({ type: 'varchar', nullable: true })
+  bannerImagePublicId?: string;
+
+  @ApiProperty({
     description: 'Category ID',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })

@@ -57,6 +57,8 @@ export class CategoriesService {
           imagePublicId: sub.imagePublicId,
           iconUrl: sub.iconUrl,
           iconPublicId: sub.iconPublicId,
+          bannerImageUrl: sub.bannerImageUrl,
+          bannerImagePublicId: sub.bannerImagePublicId,
         }),
       );
     }
@@ -188,6 +190,8 @@ export class CategoriesService {
     imagePublicId?: string,
     iconUrl?: string,
     iconPublicId?: string,
+    bannerImageUrl?: string,
+    bannerImagePublicId?: string,
   ): Promise<Subcategory> {
     this.logger.info(
       `Creating subcategory '${name}' for category: ${categoryId}`,
@@ -213,6 +217,8 @@ export class CategoriesService {
       imagePublicId,
       iconUrl,
       iconPublicId,
+      bannerImageUrl,
+      bannerImagePublicId,
     });
 
     this.logger.info(
@@ -252,6 +258,8 @@ export class CategoriesService {
     imagePublicId?: string,
     iconUrl?: string,
     iconPublicId?: string,
+    bannerImageUrl?: string,
+    bannerImagePublicId?: string,
   ): Promise<Subcategory> {
     this.logger.info(`Updating subcategory with ID: ${id}`);
 
@@ -281,6 +289,8 @@ export class CategoriesService {
     if (imagePublicId !== undefined) updateData.imagePublicId = imagePublicId;
     if (iconUrl !== undefined) updateData.iconUrl = iconUrl;
     if (iconPublicId !== undefined) updateData.iconPublicId = iconPublicId;
+    if (bannerImageUrl !== undefined) updateData.bannerImageUrl = bannerImageUrl;
+    if (bannerImagePublicId !== undefined) updateData.bannerImagePublicId = bannerImagePublicId;
 
     const updatedSubcategory = await this.subcategoriesRepository.updateById(
       id,
@@ -323,6 +333,20 @@ export class CategoriesService {
       } catch (error) {
         this.logger.error(
           `Failed to delete subcategory icon from Cloudinary: ${error.message}`,
+        );
+        // Continue with deletion even if Cloudinary deletion fails
+      }
+    }
+
+    if (subcategory.bannerImagePublicId) {
+      try {
+        await this.cloudinaryService.deleteFile(subcategory.bannerImagePublicId);
+        this.logger.info(
+          `Deleted subcategory banner image from Cloudinary: ${subcategory.bannerImagePublicId}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to delete subcategory banner image from Cloudinary: ${error.message}`,
         );
         // Continue with deletion even if Cloudinary deletion fails
       }

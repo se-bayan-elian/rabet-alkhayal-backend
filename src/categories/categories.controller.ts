@@ -148,6 +148,8 @@ export class CategoriesController {
       body.imagePublicId,
       body.iconUrl,
       body.iconPublicId,
+      body.bannerImageUrl,
+      body.bannerImagePublicId,
     );
   }
 

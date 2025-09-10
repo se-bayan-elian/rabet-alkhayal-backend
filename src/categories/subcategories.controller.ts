@@ -35,6 +35,8 @@ export class SubcategoriesController {
       body.imagePublicId,
       body.iconUrl,
       body.iconPublicId,
+      body.bannerImageUrl,
+      body.bannerImagePublicId,
     );
   }
 

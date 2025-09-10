@@ -61,6 +61,24 @@ export class CreateSubcategoryDto {
   @IsOptional()
   @IsString()
   iconPublicId?: string;
+
+  @ApiProperty({
+    description: 'Subcategory banner image URL',
+    example: 'https://cdn.example.com/banner.jpg',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  bannerImageUrl?: string;
+
+  @ApiProperty({
+    description: 'Subcategory banner image Cloudinary public ID',
+    example: 'subcategories/banner/123',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  bannerImagePublicId?: string;
 }
 
 export class CreateCategoryDto {

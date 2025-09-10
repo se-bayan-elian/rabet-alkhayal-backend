@@ -147,13 +147,18 @@ export class AuthController {
   }
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleAuth(@Req() req) {
+  async googleAuth(@Req() req, @Res() res) {
     const { user } = req;
     const [accessToken, refreshToken] = await Promise.all([
       this.authService.generateAccessToken(user.id),
       this.authService.generateRefreshToken(user.id),
     ]);
-    return { accessToken, refreshToken };
+    
+    // Redirect to frontend with tokens
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const redirectUrl = `${frontendUrl}/auth/google/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`;
+    
+    res.redirect(redirectUrl);
   }
 
   @UseGuards(JwtAuthGuard)
