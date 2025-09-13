@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 
 export class SendContactUsDto {
@@ -14,6 +15,7 @@ export class SendContactUsDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
+
   @IsString()
   @IsNotEmpty()
   message: string;
@@ -21,4 +23,16 @@ export class SendContactUsDto {
   @IsMobilePhone()
   @IsOptional()
   phone: string;
+
+  @IsString()
+  @IsOptional()
+  company: string;
+
+  @IsUUID()
+  @IsNotEmpty()
+  serviceId: string;
+
+  @IsUUID()
+  @IsOptional()
+  pricingPlanId: string;
 }

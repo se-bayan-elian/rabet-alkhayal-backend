@@ -23,6 +23,6 @@ import { FeaturesService } from './features.service';
     ProjectsService,
     FeaturesService,
   ],
-  exports: [ServicesService],
+  exports: [ServicesService, PricingPlansService],
 })
 export class ServicesModule {}

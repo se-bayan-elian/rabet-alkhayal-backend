@@ -113,8 +113,86 @@
             <td><strong>رقم الهاتف</strong></td>
           </tr>
           {{/if}}
+          {{#if company}}
+          <tr>
+            <td>{{company}}</td>
+            <td><strong>الشركة</strong></td>
+          </tr>
+          {{/if}}
         </table>
       </div>
+      
+      <div class="section">
+        <div class="section-title">تفاصيل الخدمة المطلوبة</div>
+        <table>
+          <tr>
+            <td><span class="highlight">{{service.name}}</span></td>
+            <td><strong>اسم الخدمة</strong></td>
+          </tr>
+          <tr>
+            <td>{{service.description}}</td>
+            <td><strong>وصف الخدمة</strong></td>
+          </tr>
+        </table>
+      </div>
+      
+      {{#if pricingPlan}}
+      <div class="section">
+        <div class="section-title">خطة التسعير المختارة</div>
+        <table>
+          <tr>
+            <td><span class="highlight">{{pricingPlan.name}}</span></td>
+            <td><strong>اسم الخطة</strong></td>
+          </tr>
+          {{#if pricingPlan.description}}
+          <tr>
+            <td>{{pricingPlan.description}}</td>
+            <td><strong>وصف الخطة</strong></td>
+          </tr>
+          {{/if}}
+          <tr>
+            <td><span class="highlight">{{pricingPlan.finalPrice}} ﷼</span></td>
+            <td><strong>السعر النهائي</strong></td>
+          </tr>
+          {{#if pricingPlan.originalPrice}}
+          <tr>
+            <td><span style="text-decoration: line-through; color: #999;">{{pricingPlan.originalPrice}} ﷼</span></td>
+            <td><strong>السعر الأصلي</strong></td>
+          </tr>
+          {{/if}}
+          <tr>
+            <td>{{pricingPlan.billingPeriod}}</td>
+            <td><strong>فترة الفوترة</strong></td>
+          </tr>
+          {{#if pricingPlan.deliveryDays}}
+          <tr>
+            <td>{{pricingPlan.deliveryDays}} أيام</td>
+            <td><strong>مدة التسليم</strong></td>
+          </tr>
+          {{/if}}
+          {{#if pricingPlan.revisions}}
+          <tr>
+            <td>{{pricingPlan.revisions}} مراجعة</td>
+            <td><strong>عدد المراجعات</strong></td>
+          </tr>
+          {{/if}}
+        </table>
+        
+        {{#if pricingPlan.features}}
+        <div style="margin-top: 15px;">
+          <strong>المميزات المتضمنة:</strong>
+          <ul style="margin: 10px 0; padding-right: 20px;">
+            {{#each pricingPlan.features}}
+            <li style="margin: 5px 0; color: {{#if isIncluded}}#0CD495{{else}}#999{{/if}};">
+              {{#if isIncluded}}✓{{else}}✗{{/if}} {{name}}
+              {{#if description}} - {{description}}{{/if}}
+            </li>
+            {{/each}}
+          </ul>
+        </div>
+        {{/if}}
+      </div>
+      {{/if}}
       
       <div class="section">
         <div class="section-title">الرسالة</div>

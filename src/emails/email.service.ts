@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { SendContactUsDto } from './dtos/sendContactUs.dto';
+import { ServicesService } from '../services/services.service';
+import { PricingPlansService } from '../services/pricing-plan.service';
 
 export interface VerificationEmailData {
   userName: string;
@@ -20,23 +22,53 @@ export class EmailService {
   constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
+    private readonly servicesService: ServicesService,
+    private readonly pricingPlansService: PricingPlansService,
   ) {}
 
   /**
    * Send contact us email using Handlebars template
    */
   async sendContactUsEmail(data: SendContactUsDto): Promise<void> {
+    // Fetch service information
+    const service = await this.servicesService.findServiceById(data.serviceId);
+    
+    // Fetch pricing plan information if provided
+    let pricingPlan = null;
+    if (data.pricingPlanId) {
+      pricingPlan = await this.pricingPlansService.findPricingPlanById(data.pricingPlanId);
+    }
+
     const templateData = {
       name: data.name,
       email: data.email,
       phone: data.phone,
+      company: data.company,
       message: data.message,
+      service: {
+        name: service.name,
+        description: service.description,
+      },
+      pricingPlan: pricingPlan ? {
+        name: pricingPlan.name,
+        description: pricingPlan.description,
+        originalPrice: pricingPlan.originalPrice,
+        finalPrice: pricingPlan.finalPrice,
+        billingPeriod: pricingPlan.billingPeriod,
+        deliveryDays: pricingPlan.deliveryDays,
+        revisions: pricingPlan.revisions,
+        features: pricingPlan.features?.map(feature => ({
+          name: feature.name,
+          description: feature.description,
+          isIncluded: feature.isIncluded,
+        })) || [],
+      } : null,
       date: new Date().toLocaleDateString('ar-SA'),
     };
 
     await this.mailerService.sendMail({
       to: this.configService.get('ADMIN_EMAIL', 'admin@example.com'),
-      subject: `رسالة جديدة من نموذج الاتصال - ${data.name}`,
+      subject: `رسالة جديدة من نموذج الاتصال - ${data.name} - ${service.name}`,
       template: 'contact-us', // This refers to contact-us.hbs
       context: templateData,
     });
